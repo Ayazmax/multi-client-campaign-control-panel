@@ -7,11 +7,324 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// Proves migrate and seed against the local database.
-/// The campaign tables replace this in Phase 2.
-model ConnectionProbe {
-  id        Int      @id
-  checkedAt DateTime @default(now()) @map("checked_at")
+/// Demo staff account. The password is stored only as a scrypt hash.
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  @@map("connection_probe")
+  sessions       Session[]
+  memberships    Membership[]
+  clientGrants   ClientGrant[]
+  contentEdits   ContentValue[]   @relation("ContentValueEditor")
+  offerEdits     SiteOffer[]      @relation("SiteOfferEditor")
+  snapshots      Snapshot[]
+  backups        Backup[]
+  historyEvents  HistoryEvent[]
+  launchAttempts LaunchAttempt[]
+
+  @@map("users")
+}
+
+/// Opaque login token. Only the SHA-256 hash is stored.
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Workspace {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  memberships   Membership[]
+  clients       Client[]
+  historyEvents HistoryEvent[]
+
+  @@map("workspaces")
+}
+
+model Membership {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  role        String
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@map("memberships")
+}
+
+model Client {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  name        String
+  slug        String
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  workspace Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  grants    ClientGrant[]
+  sites     Site[]
+
+  @@unique([workspaceId, slug])
+  @@map("clients")
+}
+
+model ClientGrant {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  clientId  String   @map("client_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clientId])
+  @@map("client_grants")
+}
+
+/// Language catalog. Adding Hindi later is a new row.
+model Language {
+  id         String   @id @default(uuid()) @db.Uuid
+  code       String   @unique
+  name       String
+  nativeName String?  @map("native_name")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  siteLanguages SiteLanguage[]
+  contentValues ContentValue[]
+  siteOffers    SiteOffer[]
+
+  @@map("languages")
+}
+
+model Site {
+  id             String   @id @default(uuid()) @db.Uuid
+  clientId       String   @map("client_id") @db.Uuid
+  name           String
+  slug           String   @unique
+  status         String
+  internalNotes  String?  @map("internal_notes")
+  sourceSiteId   String?  @map("source_site_id") @db.Uuid
+  liveSnapshotId String?  @unique @map("live_snapshot_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  client       Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  sourceSite   Site?     @relation("SiteClone", fields: [sourceSiteId], references: [id], onDelete: SetNull)
+  clones       Site[]    @relation("SiteClone")
+  liveSnapshot Snapshot? @relation("LiveSnapshot", fields: [liveSnapshotId], references: [id], onDelete: SetNull)
+
+  theme          Theme?
+  pages          Page[]
+  siteLanguages  SiteLanguage[]
+  contentValues  ContentValue[]
+  siteOffers     SiteOffer[]
+  analytics      AnalyticsSettings?
+  snapshots      Snapshot[]         @relation("SiteSnapshots")
+  backups        Backup[]
+  launchAttempts LaunchAttempt[]
+
+  @@map("sites")
+}
+
+/// Which languages are turned on for one website.
+model SiteLanguage {
+  id         String   @id @default(uuid()) @db.Uuid
+  siteId     String   @map("site_id") @db.Uuid
+  languageId String   @map("language_id") @db.Uuid
+  status     String
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  site     Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [languageId], references: [id], onDelete: Restrict)
+
+  @@unique([siteId, languageId])
+  @@map("site_languages")
+}
+
+model Theme {
+  id             String   @id @default(uuid()) @db.Uuid
+  siteId         String   @unique @map("site_id") @db.Uuid
+  primaryColor   String   @map("primary_color")
+  secondaryColor String   @map("secondary_color")
+  accentColor    String   @map("accent_color")
+  fontFamily     String   @map("font_family")
+  logoUrl        String?  @map("logo_url")
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("themes")
+}
+
+model Page {
+  id        String @id @default(uuid()) @db.Uuid
+  siteId    String @map("site_id") @db.Uuid
+  key       String
+  path      String
+  sortOrder Int    @map("sort_order")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([siteId, key])
+  @@map("pages")
+}
+
+/// Shared catalog of text slots. Sites store values, not a second copy of this list.
+model ContentField {
+  id        String  @id @default(uuid()) @db.Uuid
+  key       String  @unique
+  pageKey   String  @map("page_key")
+  label     String
+  sensitive Boolean @default(false)
+  sortOrder Int     @map("sort_order")
+
+  values ContentValue[]
+
+  @@map("content_fields")
+}
+
+model ContentValue {
+  id             String   @id @default(uuid()) @db.Uuid
+  siteId         String   @map("site_id") @db.Uuid
+  fieldId        String   @map("field_id") @db.Uuid
+  languageId     String   @map("language_id") @db.Uuid
+  draftValue     String   @map("draft_value") @db.Text
+  publishedValue String?  @map("published_value") @db.Text
+  revision       Int      @default(1)
+  updatedById    String?  @map("updated_by") @db.Uuid
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  site      Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  field     ContentField @relation(fields: [fieldId], references: [id], onDelete: Restrict)
+  language  Language     @relation(fields: [languageId], references: [id], onDelete: Restrict)
+  updatedBy User?        @relation("ContentValueEditor", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@unique([siteId, fieldId, languageId])
+  @@map("content_values")
+}
+
+model Offer {
+  id   String @id @default(uuid()) @db.Uuid
+  code String @unique
+  name String
+
+  siteOffers SiteOffer[]
+
+  @@map("offers")
+}
+
+model SiteOffer {
+  id             String   @id @default(uuid()) @db.Uuid
+  siteId         String   @map("site_id") @db.Uuid
+  offerId        String   @map("offer_id") @db.Uuid
+  languageId     String   @map("language_id") @db.Uuid
+  draftLabel     String?  @map("draft_label")
+  publishedLabel String?  @map("published_label")
+  draftPrice     String   @map("draft_price")
+  publishedPrice String?  @map("published_price")
+  revision       Int      @default(1)
+  updatedById    String?  @map("updated_by") @db.Uuid
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  offer     Offer    @relation(fields: [offerId], references: [id], onDelete: Restrict)
+  language  Language @relation(fields: [languageId], references: [id], onDelete: Restrict)
+  updatedBy User?    @relation("SiteOfferEditor", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@unique([siteId, offerId, languageId])
+  @@map("site_offers")
+}
+
+model AnalyticsSettings {
+  id              String   @id @default(uuid()) @db.Uuid
+  siteId          String   @unique @map("site_id") @db.Uuid
+  gaMeasurementId String?  @map("ga_measurement_id")
+  gtmContainerId  String?  @map("gtm_container_id")
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("analytics_settings")
+}
+
+model Snapshot {
+  id          String   @id @default(uuid()) @db.Uuid
+  siteId      String   @map("site_id") @db.Uuid
+  kind        String
+  label       String
+  payload     Json
+  createdById String   @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  site           Site            @relation("SiteSnapshots", fields: [siteId], references: [id], onDelete: Cascade)
+  createdBy      User            @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  liveFor        Site?           @relation("LiveSnapshot")
+  historyEvents  HistoryEvent[]
+  launchAttempts LaunchAttempt[]
+
+  @@map("snapshots")
+}
+
+model Backup {
+  id          String   @id @default(uuid()) @db.Uuid
+  siteId      String   @map("site_id") @db.Uuid
+  label       String
+  payload     Json
+  createdById String   @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  site      Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@map("backups")
+}
+
+model HistoryEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  actorId     String   @map("actor_id") @db.Uuid
+  sentence    String
+  siteIds     String[] @map("site_ids") @db.Uuid
+  snapshotId  String?  @map("snapshot_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  actor     User      @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  snapshot  Snapshot? @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, createdAt])
+  @@map("history_events")
+}
+
+model LaunchAttempt {
+  id          String   @id @default(uuid()) @db.Uuid
+  siteId      String   @map("site_id") @db.Uuid
+  outcome     String
+  message     String
+  nextStep    String   @map("next_step")
+  snapshotId  String?  @map("snapshot_id") @db.Uuid
+  createdById String   @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  site      Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  snapshot  Snapshot? @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+  createdBy User      @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@map("launch_attempts")
 }

@@ -4,6 +4,10 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import { prisma } from "./db.js";
+import { attachUser } from "./loadUser.js";
+import { authRouter } from "./routes/auth.js";
+import { panelRouter } from "./routes/panel.js";
+import { publicRouter } from "./routes/publicSite.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, "../.env") });
@@ -22,6 +26,7 @@ app.use(
   }),
 );
 app.use(express.json());
+app.use(attachUser);
 
 app.get("/health", async (_req, res) => {
   try {
@@ -38,6 +43,28 @@ app.get("/health", async (_req, res) => {
       database: "down",
     });
   }
+});
+
+app.use("/api/auth", authRouter);
+app.use("/api/panel", panelRouter);
+app.use("/api/public", publicRouter);
+
+app.use((error, _req, res, next) => {
+  if (res.headersSent) {
+    next(error);
+    return;
+  }
+  if (error.type === "entity.parse.failed") {
+    res.status(400).json({ error: "Send valid JSON." });
+    return;
+  }
+  const status = Number(error.status || error.statusCode);
+  if (status >= 400 && status < 500) {
+    res.status(status).json({ error: error.message || "Bad request." });
+    return;
+  }
+  console.error(error);
+  res.status(500).json({ error: "Something went wrong." });
 });
 
 const server = app.listen(port, () => {

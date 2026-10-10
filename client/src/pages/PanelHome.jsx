@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { fetchHealth } from "../lib/api.js";
+import { useAuth } from "../auth.jsx";
+import { fetchHealth, fetchPanelSites } from "../lib/api.js";
 
 export function PanelHome() {
+  const { user, logout } = useAuth();
   const [health, setHealth] = useState({ state: "loading" });
+  const [workspaces, setWorkspaces] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -13,6 +17,13 @@ export function PanelHome() {
       })
       .catch(() => {
         if (active) setHealth({ state: "offline" });
+      });
+    fetchPanelSites()
+      .then((body) => {
+        if (active) setWorkspaces(body.workspaces);
+      })
+      .catch((caught) => {
+        if (active) setError(caught.message);
       });
     return () => {
       active = false;
@@ -33,33 +44,67 @@ export function PanelHome() {
           <div>
             <p className="eyebrow">Control panel</p>
             <h1>Websites</h1>
+            <p className="lede">{roleLine(user)}</p>
           </div>
-          <HealthBadge health={health} />
+          <div className="header-actions">
+            <HealthBadge health={health} />
+            <button type="button" className="quiet-button" onClick={() => logout()}>
+              Sign out
+            </button>
+          </div>
         </header>
-        <section className="empty-card">
-          <h2>No campaign websites yet</h2>
-          <p>
-            This panel will list client sites after example data is seeded.
-            Publishing, languages, and shared edits come in later phases.
-          </p>
-          <Link className="text-link" to="/s/example">
-            Open the public site shell
-          </Link>
-        </section>
+        {error ? <p className="form-error">{error}</p> : null}
+        {workspaces
+          ? workspaces.map((workspace) => (
+              <section key={workspace.id} className="workspace-block">
+                <h2>
+                  {workspace.name}
+                  <span className="role-label">{workspace.role}</span>
+                </h2>
+                {workspace.sites.length === 0 ? (
+                  <p className="empty-line">No websites in this workspace yet.</p>
+                ) : (
+                  <ul className="site-list">
+                    {workspace.sites.map((site) => (
+                      <li key={site.id} className="site-row">
+                        <div>
+                          <p className="site-name">{site.name}</p>
+                          <p className="site-meta">{site.client.name}</p>
+                          <ul className="language-list">
+                            {site.languages.map((language) => (
+                              <li key={language.code}>
+                                {language.nativeName || language.name}
+                                <span> {language.status}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div className="site-actions">
+                          <p className={`badge badge-${site.status}`}>{site.status}</p>
+                          <Link to={`/s/${site.slug}/preview`}>Preview</Link>
+                          <Link to={`/s/${site.slug}`}>Public page</Link>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            ))
+          : <p className="page-loading">Loading websites…</p>}
       </main>
     </div>
   );
 }
 
+function roleLine(user) {
+  return user.memberships
+    .map((membership) => `${membership.role} in ${membership.workspace.name}`)
+    .join(" · ");
+}
+
 function HealthBadge({ health }) {
-  if (health.state === "loading") {
-    return <p className="badge">Checking API…</p>;
-  }
-  if (health.state === "offline") {
-    return <p className="badge badge-down">API unreachable</p>;
-  }
-  if (health.body.database === "up") {
-    return <p className="badge badge-up">Database connected</p>;
-  }
+  if (health.state === "loading") return <p className="badge">Checking API…</p>;
+  if (health.state === "offline") return <p className="badge badge-down">API unreachable</p>;
+  if (health.body.database === "up") return <p className="badge badge-up">Database connected</p>;
   return <p className="badge badge-down">Database unavailable</p>;
 }
