@@ -75,12 +75,14 @@ a {
   font-size: 0.92rem;
 }
 
-.nav-current {
+.nav-current,
+.panel-rail nav a {
   display: block;
   padding: 0.55rem 0.7rem;
   border-radius: 8px;
   background: #2b2722;
   font-weight: 700;
+  text-decoration: none;
 }
 
 .panel-main {
@@ -289,6 +291,121 @@ button[type="submit"],
 .badge-failed {
   background: #f8e4d8;
   color: #8a3d12;
+}
+
+.header-actions a {
+  color: #0f6e56;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.editor-form {
+  display: grid;
+  gap: 1rem;
+  max-width: 46rem;
+}
+
+.editor-card {
+  display: grid;
+  gap: 0.85rem;
+  max-width: 46rem;
+  padding: 1.1rem 1.2rem 1.25rem;
+  border: 1px solid #e2d9cc;
+  border-radius: 14px;
+  background: #fffdf8;
+}
+
+.editor-card h2 {
+  font-size: 1.35rem;
+}
+
+.editor-card p {
+  color: #4e473f;
+}
+
+.field-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.field-grid label,
+.editor-card label {
+  display: grid;
+  gap: 0.3rem;
+  font-weight: 700;
+}
+
+.field-grid input,
+.field-grid textarea,
+.editor-card input,
+.editor-card textarea {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #d9d0c3;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 400;
+}
+
+.color-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.color-row input[type="color"] {
+  width: 2.6rem;
+  height: 2.4rem;
+  padding: 0.15rem;
+}
+
+.lang-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.lang-tab {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #d9d0c3;
+  border-radius: 999px;
+  background: #fffdf8;
+  font: inherit;
+  font-weight: 700;
+}
+
+.lang-tab.is-active {
+  background: #1c1915;
+  color: #f3efe6;
+  border-color: #1c1915;
+}
+
+.editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.editor-actions a {
+  color: #0f6e56;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.solid-button {
+  padding: 0.6rem 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: #1c1915;
+  color: #f3efe6;
+  font: inherit;
+  font-weight: 700;
+}
+
+.form-notice {
+  color: #0d5c48;
+  font-weight: 700;
 }
 
 .login-shell {

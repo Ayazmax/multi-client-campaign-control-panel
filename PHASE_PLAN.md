@@ -1,6 +1,6 @@
 # Website Operations — Phase Plan
 
-Status: Phase 3 is in place. Public websites use one template for Home, Offers, and Contact. Phases 4–10 are waiting for approval.
+Status: Phase 4 is in place. A signed-in owner can clone a live site, edit the draft, preview it, and publish. Phases 5–10 are waiting for approval.
 
 This plan turns the Round 2 assessment into a build sequence. The product is a control panel for non-technical marketing and operations staff, plus example campaign websites rendered from a master template. Website content lives in PostgreSQL. The public site reads only published content.
 

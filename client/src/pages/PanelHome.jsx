@@ -81,8 +81,17 @@ export function PanelHome() {
                         </div>
                         <div className="site-actions">
                           <p className={`badge badge-${site.status}`}>{site.status}</p>
+                          <Link to={`/app/sites/${site.slug}`}>
+                            {workspace.role === "reviewer" ? "Review" : "Edit"}
+                          </Link>
+                          {(workspace.role === "owner" || workspace.role === "editor") &&
+                          site.languages.some((language) => language.status === "published") ? (
+                            <Link to={`/app/sites/${site.slug}/clone`}>Create campaign</Link>
+                          ) : null}
                           <Link to={`/s/${site.slug}/preview`}>Preview</Link>
-                          <Link to={`/s/${site.slug}`}>Public page</Link>
+                          {site.status === "live" ? (
+                            <Link to={`/s/${site.slug}`}>Public page</Link>
+                          ) : null}
                         </div>
                       </li>
                     ))}

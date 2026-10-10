@@ -1,10 +1,24 @@
+export function membershipFor(user, client) {
+  return user.memberships.find((item) => item.workspaceId === client.workspaceId);
+}
+
 export function canAccessClient(user, client) {
-  const membership = user.memberships.find(
-    (item) => item.workspaceId === client.workspaceId,
-  );
+  const membership = membershipFor(user, client);
   if (!membership) return false;
   if (membership.role === "owner") return true;
   return user.clientGrants.some((grant) => grant.clientId === client.id);
+}
+
+export function canEditSite(user, client) {
+  if (!canAccessClient(user, client)) return false;
+  const role = membershipFor(user, client)?.role;
+  return role === "owner" || role === "editor";
+}
+
+export function canPublishSite(user, client) {
+  if (!canAccessClient(user, client)) return false;
+  const role = membershipFor(user, client)?.role;
+  return role === "owner" || role === "reviewer";
 }
 
 export function toAuthUser(user) {

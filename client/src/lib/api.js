@@ -52,3 +52,21 @@ export function fetchPanelSite(slug) {
 export function fetchPublicSite(slug) {
   return request(`/api/public/sites/${slug}`);
 }
+
+export function cloneSite(slug, name) {
+  return request(`/api/panel/sites/${slug}/clone`, {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function saveSite(slug, body) {
+  return request(`/api/panel/sites/${slug}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export function publishSite(slug) {
+  return request(`/api/panel/sites/${slug}/publish`, { method: "POST" });
+}
