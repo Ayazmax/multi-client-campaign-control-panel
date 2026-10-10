@@ -1,6 +1,6 @@
 # Website Operations — Phase Plan
 
-Status: Phase 4 is in place. A signed-in owner can clone a live site, edit the draft, preview it, and publish. Phases 5–10 are waiting for approval.
+Status: Phase 5 is in place. Staff can add a language, import a translation file, see missing slots, and publish that language alone. Phases 6–10 are waiting for approval.
 
 This plan turns the Round 2 assessment into a build sequence. The product is a control panel for non-technical marketing and operations staff, plus example campaign websites rendered from a master template. Website content lives in PostgreSQL. The public site reads only published content.
 

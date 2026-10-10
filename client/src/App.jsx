@@ -1,11 +1,14 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, RequireAuth } from "./auth.jsx";
-import { CloneCampaign } from "./pages/CloneCampaign.jsx";
+import { CloneCampaign } from "./components/CloneCampaign.jsx";
+import { PanelHome } from "./components/PanelHome.jsx";
+import { SiteEditor } from "./components/SiteEditor.jsx";
 import { Login } from "./pages/Login.jsx";
-import { PanelHome } from "./pages/PanelHome.jsx";
 import { PublicSite } from "./pages/PublicSite.jsx";
-import { SiteEditor } from "./pages/SiteEditor.jsx";
 
+// Routes only. The website list is components/PanelHome.jsx.
+// The campaign form is components/SiteEditor.jsx.
+// The public website is pages/CampaignSite.jsx.
 export function App() {
   return (
     <AuthProvider>

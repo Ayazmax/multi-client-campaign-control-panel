@@ -1,3 +1,5 @@
+// Panel requests. Site list, clone, save, and publish go to routes/campaigns.js.
+// Adding a language and importing a file go to routes/languages.js.
 const apiUrl = import.meta.env.VITE_API_URL || "";
 
 async function request(path, options = {}) {
@@ -67,6 +69,23 @@ export function saveSite(slug, body) {
   });
 }
 
-export function publishSite(slug) {
-  return request(`/api/panel/sites/${slug}/publish`, { method: "POST" });
+export function publishSite(slug, language) {
+  return request(`/api/panel/sites/${slug}/publish`, {
+    method: "POST",
+    body: JSON.stringify(language ? { language } : {}),
+  });
+}
+
+export function addSiteLanguage(slug, code) {
+  return request(`/api/panel/sites/${slug}/languages`, {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+}
+
+export function importTranslation(slug, body) {
+  return request(`/api/panel/sites/${slug}/translations`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }

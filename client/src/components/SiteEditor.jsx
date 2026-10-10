@@ -1,7 +1,8 @@
+// Campaign form. Branding, text, offers, contact, languages, and publish controls live here.
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../auth.jsx";
-import { fetchPanelSite, publishSite, saveSite } from "../lib/api.js";
+import { addSiteLanguage, fetchPanelSite, importTranslation, publishSite, saveSite } from "../lib/api.js";
 import { PanelFrame } from "./PanelFrame.jsx";
 
 const SECTIONS = [
@@ -14,11 +15,15 @@ export function SiteEditor() {
   const { slug } = useParams();
   const { user } = useAuth();
   const [site, setSite] = useState(null);
+  const [missing, setMissing] = useState([]);
+  const [catalog, setCatalog] = useState([]);
   const [language, setLanguage] = useState("");
+  const [languageToAdd, setLanguageToAdd] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
@@ -26,8 +31,10 @@ export function SiteEditor() {
     fetchPanelSite(slug)
       .then((body) => {
         if (!active) return;
-        setSite(body.site);
+        remember(body);
         setLanguage(body.site.languages[0]?.code || "en");
+        const used = new Set(body.site.languages.map((item) => item.code));
+        setLanguageToAdd(body.catalog.find((item) => !used.has(item.code))?.code || "");
       })
       .catch((caught) => {
         if (active) setError(caught.message);
@@ -36,6 +43,13 @@ export function SiteEditor() {
       active = false;
     };
   }, [slug]);
+
+  function remember(body) {
+    setSite(body.site);
+    setMissing(body.missing || []);
+    if (body.catalog) setCatalog(body.catalog);
+    return body;
+  }
 
   const role = site
     ? user.memberships.find((item) => item.workspace.slug === site.workspace.slug)?.role
@@ -71,25 +85,26 @@ export function SiteEditor() {
     setError("");
     setNotice("");
     try {
-      const body = await saveSite(site.slug, {
-        theme: site.theme,
-        fields: site.fields
-          .filter((field) => !field.sensitive)
-          .map((field) => ({
-            key: field.key,
-            language: field.language,
-            draftValue: field.draftValue,
-            revision: field.revision,
+      await remember(
+        await saveSite(site.slug, {
+          theme: site.theme,
+          fields: site.fields
+            .filter((field) => !field.sensitive)
+            .map((field) => ({
+              key: field.key,
+              language: field.language,
+              draftValue: field.draftValue,
+              revision: field.revision,
+            })),
+          offers: site.offers.map((item) => ({
+            code: item.code,
+            language: item.language,
+            draftLabel: item.draftLabel,
+            draftPrice: item.draftPrice,
+            revision: item.revision,
           })),
-        offers: site.offers.map((offer) => ({
-          code: offer.code,
-          language: offer.language,
-          draftLabel: offer.draftLabel,
-          draftPrice: offer.draftPrice,
-          revision: offer.revision,
-        })),
-      });
-      setSite(body.site);
+        }),
+      );
       setNotice("Draft saved.");
     } catch (caught) {
       setError(caught.message);
@@ -102,8 +117,9 @@ export function SiteEditor() {
     setPublishing(true);
     setError("");
     try {
-      const body = await publishSite(site.slug);
-      setSite(body.site);
+      const body = remember(
+        await publishSite(site.slug, site.status === "draft" ? undefined : language),
+      );
       setNotice(body.sentence);
       setConfirming(false);
     } catch (caught) {
@@ -113,20 +129,69 @@ export function SiteEditor() {
     }
   }
 
+  async function onAddLanguage() {
+    setError("");
+    setNotice("");
+    try {
+      const body = remember(await addSiteLanguage(site.slug, languageToAdd));
+      setLanguage(languageToAdd);
+      const added = body.catalog.find((item) => item.code === languageToAdd);
+      const next = body.catalog.find((item) => !body.site.languages.some((row) => row.code === item.code));
+      setLanguageToAdd(next?.code || "");
+      setNotice(`${added?.name || "The language"} is a draft. Visitors cannot switch to it until it is published.`);
+    } catch (caught) {
+      setError(caught.message);
+    }
+  }
+
+  async function sendImport(parsed) {
+    setImporting(true);
+    setError("");
+    setNotice("");
+    try {
+      const languageCode = typeof parsed?.language === "string" ? parsed.language : language;
+      const fields = parsed?.fields && typeof parsed.fields === "object" ? parsed.fields : parsed;
+      const body = remember(await importTranslation(site.slug, { language: languageCode, fields }));
+      setLanguage(languageCode);
+      const skipped = body.ignored?.length ? ` ${body.ignored.length} keys were skipped.` : "";
+      setNotice(`Imported ${body.filled} slots. ${body.missingCount} are still missing.${skipped}`);
+    } catch (caught) {
+      setError(caught.message);
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  async function onImportFile(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    try {
+      await sendImport(JSON.parse(await file.text()));
+    } catch {
+      setError("That file is not valid JSON.");
+    }
+  }
+
+  async function onSuppliedFile() {
+    const parsed = await fetch("/samples/lanka-homes-si.json").then((response) => response.json());
+    await sendImport(parsed);
+  }
+
   const visibleFields = site
     ? site.fields.filter((field) => field.language === language && !field.sensitive)
     : [];
   const offer = site?.offers.find((item) => item.language === language);
+  const currentLanguage = site?.languages.find((item) => item.code === language);
+  const available = catalog.filter((item) => !site?.languages.some((row) => row.code === item.code));
+  const publishOnly = site?.status !== "draft";
+  const previewHref = site ? `/s/${site.slug}/preview?lang=${language}` : "/app";
 
   return (
     <PanelFrame
       title={site?.name || "Website"}
       lede={site ? `${site.client.name} · ${site.status}` : "Loading the draft."}
-      actions={
-        site ? (
-          <Link to={`/s/${site.slug}/preview`}>Preview</Link>
-        ) : null
-      }
+      actions={site ? <Link to={previewHref}>Preview</Link> : null}
     >
       {!site && error ? <p className="form-error">{error}</p> : null}
       {!site && !error ? <p className="page-loading">Loading website…</p> : null}
@@ -171,6 +236,69 @@ export function SiteEditor() {
                 />
               </label>
             </div>
+          </section>
+
+          <section className="editor-card">
+            <h2>Languages</h2>
+            <ul className="language-list">
+              {site.languages.map((item) => (
+                <li key={item.code}>
+                  <button type="button" className="texty" onClick={() => setLanguage(item.code)}>
+                    {item.nativeName || item.name}
+                  </button>
+                  <span> {item.status}</span>
+                </li>
+              ))}
+            </ul>
+            {canEdit && available.length > 0 ? (
+              <div className="editor-actions">
+                <label>
+                  Add a language
+                  <select value={languageToAdd} onChange={(event) => setLanguageToAdd(event.target.value)}>
+                    {available.map((item) => (
+                      <option key={item.code} value={item.code}>
+                        {item.nativeName || item.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button type="button" className="solid-button" onClick={onAddLanguage} disabled={!languageToAdd}>
+                  Add language
+                </button>
+              </div>
+            ) : null}
+            {canEdit ? (
+              <div className="field-grid">
+                <label>
+                  Import a translation file
+                  <input type="file" accept="application/json,.json" onChange={onImportFile} disabled={importing} />
+                </label>
+                <p>
+                  The file is JSON keyed by field id, such as home.hero.title. It fills the draft for that
+                  language. Private fields are skipped.
+                </p>
+                {site.slug === "lanka-homes" ? (
+                  <button type="button" className="solid-button" onClick={onSuppliedFile} disabled={importing}>
+                    {importing ? "Importing…" : "Import supplied Sinhala file"}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+            <h3>Missing translations</h3>
+            {missing.length === 0 ? (
+              <p>Every slot has a draft.</p>
+            ) : (
+              <ul className="missing-list">
+                {missing.map((item) => (
+                  <li key={`${item.languageCode}-${item.key}`}>
+                    <span>{item.language}</span>
+                    <span>{item.page}</span>
+                    <span>{item.field}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Link to={previewHref}>Preview {currentLanguage?.nativeName || "this language"}</Link>
           </section>
 
           {site.languages.length > 1 ? (
@@ -237,7 +365,7 @@ export function SiteEditor() {
             ) : (
               <p className="site-meta">An editor or owner saves changes.</p>
             )}
-            <Link to={`/s/${site.slug}/preview`}>Preview</Link>
+            <Link to={previewHref}>Preview</Link>
             {site.status === "live" ? <Link to={`/s/${site.slug}`}>Public page</Link> : null}
           </div>
 
@@ -247,7 +375,9 @@ export function SiteEditor() {
               {confirming ? (
                 <>
                   <p>
-                    This writes a snapshot and makes the draft the public page for {site.name}.
+                    {publishOnly
+                      ? `Publish ${currentLanguage?.name || "this language"} only. The other languages stay as they are.`
+                      : `This writes a snapshot and makes the draft the public page for ${site.name}.`}
                   </p>
                   <div className="editor-actions">
                     <button type="button" className="solid-button" disabled={publishing} onClick={onPublish}>
@@ -260,7 +390,7 @@ export function SiteEditor() {
                 </>
               ) : (
                 <button type="button" className="solid-button" onClick={() => setConfirming(true)}>
-                  Publish
+                  {publishOnly ? `Publish ${currentLanguage?.nativeName || "language"}` : "Publish"}
                 </button>
               )}
             </section>

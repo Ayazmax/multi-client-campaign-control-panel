@@ -1,5 +1,13 @@
-import { historyDate, joinNames, snapshotPayload } from "./snapshot.js";
-import { siteDetailInclude } from "./siteInclude.js";
+// One campaign: list, open, clone, save, and publish.
+// A change that spans several websites belongs in this file too.
+import { Router } from "express";
+import { prisma } from "../db.js";
+import { canAccessClient, canEditSite, canPublishSite } from "../access.js";
+import { requireUser } from "../loadUser.js";
+import { toStaffSiteSummary } from "../serialize.js";
+import { historyDate, joinNames, snapshotPayload } from "../snapshot.js";
+import { siteDetailInclude } from "../siteInclude.js";
+import { loadSite, present } from "./staffSite.js";
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
@@ -200,11 +208,18 @@ export async function saveCampaign(tx, site, body, actorId) {
   });
 }
 
-export async function publishCampaign(tx, site, actor) {
-  const languagesToPublish =
-    site.status === "draft"
-      ? site.siteLanguages
-      : site.siteLanguages.filter((item) => item.status === "published");
+export async function publishCampaign(tx, site, actor, languageCode) {
+  const requested = typeof languageCode === "string" ? languageCode.trim() : "";
+  let languagesToPublish;
+  if (requested) {
+    const match = site.siteLanguages.find((item) => item.language.code === requested);
+    if (!match) throw httpError(400, "That language is not on this website.");
+    languagesToPublish = [match];
+  } else if (site.status === "draft") {
+    languagesToPublish = site.siteLanguages;
+  } else {
+    languagesToPublish = site.siteLanguages.filter((item) => item.status === "published");
+  }
   if (languagesToPublish.length === 0) {
     throw httpError(400, "Add a language before publishing.");
   }
@@ -312,3 +327,125 @@ function httpError(status, message) {
   error.status = status;
   return error;
 }
+
+const listInclude = {
+  client: { include: { workspace: true } },
+  siteLanguages: { include: { language: true } },
+};
+
+export const campaignsRouter = Router();
+campaignsRouter.use(requireUser);
+
+campaignsRouter.get("/sites", async (req, res, next) => {
+  try {
+    const memberships = [...req.user.memberships].sort((left, right) =>
+      left.workspace.name.localeCompare(right.workspace.name),
+    );
+    const sites = await prisma.site.findMany({
+      include: listInclude,
+      orderBy: { name: "asc" },
+    });
+    const visible = sites.filter((site) => canAccessClient(req.user, site.client));
+    res.json({
+      workspaces: memberships.map((membership) => ({
+        id: membership.workspace.id,
+        name: membership.workspace.name,
+        slug: membership.workspace.slug,
+        role: membership.role,
+        sites: visible
+          .filter((site) => site.client.workspaceId === membership.workspaceId)
+          .map(toStaffSiteSummary),
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+campaignsRouter.get("/sites/:slug", async (req, res, next) => {
+  try {
+    const site = await loadSite(req.params.slug);
+    if (!site || !canAccessClient(req.user, site.client)) {
+      res.status(404).json({ error: "Website not found." });
+      return;
+    }
+    res.json(await present(site));
+  } catch (error) {
+    next(error);
+  }
+});
+
+campaignsRouter.post("/sites/:slug/clone", async (req, res, next) => {
+  try {
+    const source = await loadSite(req.params.slug);
+    if (!source || !canAccessClient(req.user, source.client)) {
+      res.status(404).json({ error: "Website not found." });
+      return;
+    }
+    if (!canEditSite(req.user, source.client)) {
+      res.status(403).json({ error: "An editor or owner creates a campaign." });
+      return;
+    }
+    const name = readCampaignName(req.body);
+    const slug = slugFromName(name);
+    if (!slug) {
+      res.status(400).json({ error: "Use letters or numbers in the campaign name." });
+      return;
+    }
+    const taken = await prisma.site.findUnique({ where: { slug } });
+    if (taken) {
+      res.status(409).json({ error: "That web address is already in use. Choose another name." });
+      return;
+    }
+    const site = await prisma.$transaction(
+      (tx) => cloneCampaign(tx, source, { name, slug, actor: req.user }),
+      { timeout: 20000 },
+    );
+    res.status(201).json(await present(site));
+  } catch (error) {
+    next(error);
+  }
+});
+
+campaignsRouter.patch("/sites/:slug", async (req, res, next) => {
+  try {
+    const site = await loadSite(req.params.slug);
+    if (!site || !canAccessClient(req.user, site.client)) {
+      res.status(404).json({ error: "Website not found." });
+      return;
+    }
+    if (!canEditSite(req.user, site.client)) {
+      res.status(403).json({ error: "An editor or owner saves changes." });
+      return;
+    }
+    const saved = await prisma.$transaction(
+      (tx) => saveCampaign(tx, site, req.body, req.user.id),
+      { timeout: 20000 },
+    );
+    res.json(await present(saved));
+  } catch (error) {
+    next(error);
+  }
+});
+
+campaignsRouter.post("/sites/:slug/publish", async (req, res, next) => {
+  try {
+    const site = await loadSite(req.params.slug);
+    if (!site || !canAccessClient(req.user, site.client)) {
+      res.status(404).json({ error: "Website not found." });
+      return;
+    }
+    if (!canPublishSite(req.user, site.client)) {
+      res.status(403).json({ error: "An owner or reviewer publishes a website." });
+      return;
+    }
+    const language = typeof req.body?.language === "string" ? req.body.language : "";
+    const published = await prisma.$transaction(
+      (tx) => publishCampaign(tx, site, req.user, language),
+      { timeout: 20000 },
+    );
+    res.json({ ...(await present(published.site)), sentence: published.sentence });
+  } catch (error) {
+    next(error);
+  }
+});

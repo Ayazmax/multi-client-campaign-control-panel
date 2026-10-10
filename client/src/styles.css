@@ -408,6 +408,45 @@ button[type="submit"],
   font-weight: 700;
 }
 
+.editor-card h3 {
+  margin: 0.2rem 0 0;
+  font-size: 1.05rem;
+}
+
+.editor-card select {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #d9d0c3;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 400;
+  background: #fff;
+}
+
+button.texty {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #0f6e56;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.missing-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.missing-list li {
+  display: grid;
+  grid-template-columns: 7.5rem 6.5rem 1fr;
+  gap: 0.6rem;
+  padding: 0.4rem 0;
+  border-top: 1px solid #e2d9cc;
+  font-weight: 400;
+}
+
 .login-shell {
   display: grid;
   min-height: 100vh;

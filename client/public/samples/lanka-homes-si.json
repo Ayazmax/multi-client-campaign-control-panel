@@ -1,0 +1,21 @@
+{
+  "language": "si",
+  "fields": {
+    "home.seo.title": "ලංකා හෝම්ස් | අලුත් අවුරුද්දට නිවසක්",
+    "home.h1": "ලංකා හෝම්ස්",
+    "home.hero.title": "අලුත් අවුරුද්දට නිවසක්",
+    "home.hero.subtitle": "ලැයිස්තු බලා, උත්සව සම්බන්ධතා දීමනාව ගැන අසන්න.",
+    "home.hero.image": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1600&q=80",
+    "offers.seo.title": "දීමනා | ලංකා හෝම්ස්",
+    "offers.h1": "වත්මන් දීමනා",
+    "offers.intro": "නරඹන්නන්ට නැරඹීම සමඟ උත්සව ෆයිබර් සැලැස්ම එක් කළ හැක.",
+    "contact.seo.title": "සම්බන්ධ වන්න | ලංකා හෝම්ස්",
+    "contact.seo.description": "නැරඹීමක් වෙන් කිරීමට කොළඹ මේසය අමතන්න.",
+    "contact.h1": "නැරඹීමක් වෙන් කරන්න",
+    "contact.intro": "නැරඹීම් මේසය සිංහලෙන් පිළිතුරු දෙයි.",
+    "contact.phone": "011 4 220 880",
+    "contact.address": "42 ඩුප්ලිකේෂන් පාර, කොළඹ 04",
+    "offer.festive-fibre.label": "උත්සව ෆයිබර් සැලැස්ම",
+    "offer.festive-fibre.price": "Rs 4,999"
+  }
+}

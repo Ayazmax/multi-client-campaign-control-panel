@@ -1,3 +1,4 @@
+// Every table and column is defined here.
 generator client {
   provider = "prisma-client-js"
 }

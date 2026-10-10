@@ -1,3 +1,4 @@
+// Website list. Status, preview, and the create-campaign action live here.
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth.jsx";
