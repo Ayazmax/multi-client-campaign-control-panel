@@ -1,6 +1,6 @@
 # Website Operations — Phase Plan
 
-Status: Phase 2 is in place. Seeded users can sign in, and a public website returns only published languages. Phases 3–10 are waiting for approval.
+Status: Phase 3 is in place. Public websites use one template for Home, Offers, and Contact. Phases 4–10 are waiting for approval.
 
 This plan turns the Round 2 assessment into a build sequence. The product is a control panel for non-technical marketing and operations staff, plus example campaign websites rendered from a master template. Website content lives in PostgreSQL. The public site reads only published content.
 

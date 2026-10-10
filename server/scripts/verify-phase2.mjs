@@ -86,6 +86,20 @@ check(sinhala?.status === "draft", "staff preview still shows Sinhala as a draft
 const privateField = preview.body.site.fields.find((field) => field.key === "contact.private_line");
 check(Boolean(privateField?.draftValue), "staff can see the private contact line");
 
+const sitemap = await fetch(`${base}/sitemap.xml`);
+const sitemapText = await sitemap.text();
+check(sitemap.status === 200 && sitemapText.includes("<urlset"), "sitemap.xml is served");
+check(sitemapText.includes("/s/northwind-mobile</loc>") || sitemapText.includes("/s/northwind-mobile<"), "sitemap lists Northwind Mobile");
+check(sitemapText.includes("/s/lanka-homes/offers"), "sitemap lists the Offers page");
+check(sitemapText.includes("lang=ta"), "sitemap lists published Tamil URLs");
+check(!sitemapText.includes("northwind-campus"), "sitemap omits the unpublished campus site");
+check(!sitemapText.includes("lang=si"), "sitemap omits the Sinhala draft");
+
+const robots = await fetch(`${base}/robots.txt`);
+const robotsText = await robots.text();
+check(robots.status === 200 && robotsText.includes("Sitemap:"), "robots.txt points at the sitemap");
+check(robotsText.includes("Disallow: /s/*/preview"), "robots.txt keeps preview pages out");
+
 const loggedOut = await fetch(`${base}/api/auth/logout`, {
   method: "POST",
   headers: { cookie: amina.cookie },
@@ -98,4 +112,4 @@ if (failures.length) {
   console.error(`\n${failures.length} check(s) failed`);
   process.exit(1);
 }
-console.log("\nPhase 2 checks passed");
+console.log("\nPhase 2 and Phase 3 checks passed");

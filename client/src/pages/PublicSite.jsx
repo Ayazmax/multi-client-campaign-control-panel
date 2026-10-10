@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { fetchPanelSite, fetchPublicSite } from "../lib/api.js";
+import { CampaignSite } from "./CampaignSite.jsx";
 
 export function PublicSite({ preview = false }) {
-  const { siteSlug } = useParams();
+  const { siteSlug, page } = useParams();
+  const [params, setParams] = useSearchParams();
+  const requested = params.get("lang");
   const [state, setState] = useState({ status: "loading" });
-  const [language, setLanguage] = useState("en");
 
   useEffect(() => {
     let active = true;
@@ -13,14 +15,7 @@ export function PublicSite({ preview = false }) {
     const load = preview ? fetchPanelSite(siteSlug) : fetchPublicSite(siteSlug);
     load
       .then((body) => {
-        if (!active) return;
-        const site = body.site;
-        const first = preview
-          ? site.languages.find((item) => item.status === "published")?.code ||
-            site.languages[0]?.code
-          : site.languages[0]?.code;
-        setLanguage(first || "en");
-        setState({ status: "ready", site });
+        if (active) setState({ status: "ready", site: body.site });
       })
       .catch((error) => {
         if (!active) return;
@@ -34,6 +29,15 @@ export function PublicSite({ preview = false }) {
     };
   }, [preview, siteSlug]);
 
+  useEffect(() => {
+    if (state.status !== "ready" || !requested) return;
+    const allowed = visibleLanguages(state.site, preview);
+    if (allowed.some((item) => item.code === requested)) return;
+    const next = new URLSearchParams(params);
+    next.delete("lang");
+    setParams(next, { replace: true });
+  }, [params, preview, requested, setParams, state]);
+
   if (state.status === "loading") {
     return <p className="page-loading">Loading website…</p>;
   }
@@ -46,7 +50,7 @@ export function PublicSite({ preview = false }) {
           <p>
             {preview
               ? "It is missing, or your account has no access to this client."
-              : "Visitors only see a website after it has been published. Draft languages stay off this page."}
+              : "Visitors only see a website after it has been published."}
           </p>
           <Link className="text-link" to="/app">
             Back to operations
@@ -59,107 +63,32 @@ export function PublicSite({ preview = false }) {
     return <p className="page-loading">{state.message}</p>;
   }
 
-  return preview ? (
-    <StaffPreview site={state.site} language={language} onLanguage={setLanguage} />
-  ) : (
-    <PublishedSummary site={state.site} language={language} onLanguage={setLanguage} />
+  const languages = visibleLanguages(state.site, preview);
+  const language = languages.some((item) => item.code === requested)
+    ? requested
+    : languages.find((item) => item.status !== "draft")?.code || languages[0]?.code || "en";
+
+  function onLanguage(code) {
+    const next = new URLSearchParams(params);
+    const fallback = languages.find((item) => item.status !== "draft")?.code || languages[0]?.code;
+    if (code === fallback) next.delete("lang");
+    else next.set("lang", code);
+    setParams(next);
+  }
+
+  return (
+    <CampaignSite
+      site={state.site}
+      page={page || "home"}
+      language={language}
+      languages={languages}
+      preview={preview}
+      onLanguage={onLanguage}
+    />
   );
 }
 
-function PublishedSummary({ site, language, onLanguage }) {
-  const fields = site.fields[language] || {};
-  const offer = site.offers[0]?.languages?.[language];
-  return (
-    <div className="public-shell">
-      <header className="public-bar">
-        <p className="wordmark">{site.name}</p>
-        <LanguageSwitch
-          languages={site.languages}
-          language={language}
-          onLanguage={onLanguage}
-        />
-      </header>
-      <main className="public-summary">
-        <p className="eyebrow">Published page</p>
-        <h1>{fields["home.h1"] || site.name}</h1>
-        <p className="hero-title">{fields["home.hero.title"]}</p>
-        <p>{fields["home.hero.subtitle"]}</p>
-        {offer ? (
-          <p className="offer-line">
-            {offer.label}: {offer.price}
-          </p>
-        ) : null}
-        <p className="site-meta">
-          {fields["contact.phone"]}
-          {fields["contact.email"] ? ` · ${fields["contact.email"]}` : ""}
-        </p>
-        <p className="phase-note">
-          The full Home, Offers, and Contact template is the next phase. This page
-          shows only published fields.
-        </p>
-        <Link className="text-link" to="/app">
-          Back to operations
-        </Link>
-      </main>
-    </div>
-  );
-}
-
-function StaffPreview({ site, language, onLanguage }) {
-  const current = site.languages.find((item) => item.code === language);
-  const hero = site.fields.find(
-    (field) => field.key === "home.hero.title" && field.language === language,
-  );
-  const privateLine = site.fields.find((field) => field.key === "contact.private_line");
-  return (
-    <div className="public-shell">
-      <header className="public-bar">
-        <p className="wordmark">{site.name}</p>
-        <p className="preview-flag">Draft preview</p>
-        <LanguageSwitch
-          languages={site.languages}
-          language={language}
-          onLanguage={onLanguage}
-          showStatus
-        />
-      </header>
-      <main className="public-summary">
-        <p className="eyebrow">Staff preview · {site.client.name}</p>
-        <h1>{hero?.draftValue || site.name}</h1>
-        <p>
-          {current?.status === "published"
-            ? "This language is on the public site."
-            : "This language is still a draft. Visitors cannot see it."}
-        </p>
-        {privateLine ? (
-          <p className="site-meta">Private line, staff only: {privateLine.draftValue}</p>
-        ) : (
-          <p className="site-meta">No private contact line on this website.</p>
-        )}
-        {site.internalNotes ? <p className="site-meta">{site.internalNotes}</p> : null}
-        <Link className="text-link" to="/app">
-          Back to operations
-        </Link>
-      </main>
-    </div>
-  );
-}
-
-function LanguageSwitch({ languages, language, onLanguage, showStatus = false }) {
-  if (languages.length === 0) return null;
-  return (
-    <div className="language-switch">
-      {languages.map((item) => (
-        <button
-          key={item.code}
-          type="button"
-          className={item.code === language ? "language-on" : ""}
-          onClick={() => onLanguage(item.code)}
-        >
-          {item.nativeName || item.name}
-          {showStatus ? ` · ${item.status}` : ""}
-        </button>
-      ))}
-    </div>
-  );
+function visibleLanguages(site, preview) {
+  if (preview) return site.languages;
+  return site.languages.filter((item) => item.status !== "draft");
 }

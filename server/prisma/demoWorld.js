@@ -283,7 +283,7 @@ export const SITES = [
       primaryColor: "#b42318",
       secondaryColor: "#3f1d1a",
       accentColor: "#f4b942",
-      fontFamily: "Source Serif 4",
+      fontFamily: "Source Sans 3",
     },
     pages: PAGES,
     languages: [

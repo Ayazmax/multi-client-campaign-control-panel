@@ -18,15 +18,15 @@ export function App() {
             </RequireAuth>
           }
         />
-        <Route path="/s/:siteSlug" element={<PublicSite />} />
         <Route
-          path="/s/:siteSlug/preview"
+          path="/s/:siteSlug/preview/:page?"
           element={
             <RequireAuth>
               <PublicSite preview />
             </RequireAuth>
           }
         />
+        <Route path="/s/:siteSlug/:page?" element={<PublicSite />} />
       </Routes>
     </AuthProvider>
   );
