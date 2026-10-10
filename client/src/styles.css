@@ -1,0 +1,182 @@
+:root {
+  color: #1c1915;
+  background: #f3efe6;
+  font-family: "Source Sans 3", "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+h1,
+h2,
+.wordmark {
+  font-family: "Source Serif 4", Georgia, serif;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+h1 {
+  margin: 0;
+  font-size: 2.25rem;
+  line-height: 1.15;
+}
+
+h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+}
+
+.eyebrow {
+  margin: 0 0 0.35rem;
+  color: #6d6458;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.text-link {
+  display: inline-block;
+  margin-top: 1.25rem;
+  color: #0f6e56;
+  font-weight: 700;
+}
+
+.panel-shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+.panel-rail {
+  padding: 1.5rem 1.25rem;
+  background: #1c1915;
+  color: #f3efe6;
+}
+
+.rail-note {
+  margin: 0.35rem 0 2rem;
+  color: #c8bfb2;
+  font-size: 0.92rem;
+}
+
+.nav-current {
+  display: block;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  background: #2b2722;
+  font-weight: 700;
+}
+
+.panel-main {
+  padding: 2rem 2.5rem 3rem;
+}
+
+.panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.empty-card,
+.public-empty {
+  max-width: 38rem;
+  padding: 1.5rem 1.6rem 1.7rem;
+  border: 1px solid #e2d9cc;
+  border-radius: 16px;
+  background: #fffdf8;
+}
+
+.empty-card p,
+.public-empty p {
+  color: #4e473f;
+}
+
+.badge {
+  margin: 0.35rem 0 0;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: #e7e1d6;
+  color: #4e473f;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.badge-up {
+  background: #d9efe6;
+  color: #0d5c48;
+}
+
+.badge-down {
+  background: #f8e4d8;
+  color: #8a3d12;
+}
+
+.public-shell {
+  min-height: 100vh;
+  background:
+    linear-gradient(#f7f4ee, #f7f4ee) padding-box,
+    #efeae1;
+}
+
+.public-bar {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 1.1rem 2rem;
+  border-bottom: 1px solid #e2d9cc;
+  background: #fffdf8;
+}
+
+.slug {
+  color: #6d6458;
+  font-family: "Source Sans 3", sans-serif;
+  font-weight: 600;
+}
+
+.preview-flag {
+  margin-left: auto;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #f3e4c4;
+  color: #6d4e12;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.public-empty {
+  margin: 3rem auto;
+}
+
+@media (max-width: 720px) {
+  .panel-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-main,
+  .public-bar {
+    padding-left: 1.1rem;
+    padding-right: 1.1rem;
+  }
+
+  .panel-header {
+    flex-direction: column;
+  }
+}

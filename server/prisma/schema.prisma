@@ -1,0 +1,17 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Proves migrate and seed against the local database.
+/// The campaign tables replace this in Phase 2.
+model ConnectionProbe {
+  id        Int      @id
+  checkedAt DateTime @default(now()) @map("checked_at")
+
+  @@map("connection_probe")
+}
