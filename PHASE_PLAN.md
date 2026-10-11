@@ -1,6 +1,6 @@
 # Website Operations — Phase Plan
 
-Status: Phase 6 is in place. Staff can change the Festive Fibre Plan price or the contact phone on chosen websites and languages, review what is excluded, and save it as a draft or publish it. Phases 7–10 are waiting for approval.
+Status: Phase 7 is in place. An editor can save a draft, a reviewer can publish it, and a stale save shows both versions instead of overwriting. Phases 8–10 are waiting for approval.
 
 This plan turns the Round 2 assessment into a build sequence. The product is a control panel for non-technical marketing and operations staff, plus example campaign websites rendered from a master template. Website content lives in PostgreSQL. The public site reads only published content.
 
@@ -306,30 +306,5 @@ Checks to run before calling Phase 10 done:
 - Backup restore and workspace transfer show the impact before they run.
 - Editor cannot publish. Reviewer cannot open an unassigned client.
 - Sitemap lists only public, published site URLs.
-
-## How a small review change stays small
-
-The brief may ask for a 10–15 minute change, such as renaming a field or swapping an input.
-
-- Field keys live in one catalog used by the template, the editor, import, and bulk update.
-- Each panel screen is a separate route and form.
-- The database is changed only through Prisma migrations.
-- Publish, restore, and bulk edit share one write path that records history.
-
-A rename should touch the catalog, one form label, and one migration, then the public page and the bulk-update preview are rechecked.
-
-## Suggested order of approval
-
-Approve Phase 1 through Phase 4 first if you want a visible website early. Phases 5 through 9 are the assessment's remaining journeys. Phase 10 is packaging and deploy.
-
-If you want a thinner demo, the cut line is after Phase 9: everything in the brief's story still exists, and Phase 10 only writes it up and hosts it.
-
-## Not in this plan
-
-- A page builder or per-client custom layouts.
-- A second frontend framework.
-- Real Google tag delivery, payments, or email sending.
-- File upload hosting.
-- Native mobile apps.
 
 Reply with the phases you approve, or the assumptions you want changed, and implementation starts at Phase 1.

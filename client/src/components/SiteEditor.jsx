@@ -25,6 +25,7 @@ export function SiteEditor() {
   const [publishing, setPublishing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [conflict, setConflict] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -79,37 +80,36 @@ export function SiteEditor() {
     }));
   }
 
-  async function onSave(event) {
-    event.preventDefault();
+  async function sendSave(revisions) {
     setSaving(true);
     setError("");
     setNotice("");
     try {
-      await remember(
-        await saveSite(site.slug, {
-          theme: site.theme,
-          fields: site.fields
-            .filter((field) => !field.sensitive)
-            .map((field) => ({
-              key: field.key,
-              language: field.language,
-              draftValue: field.draftValue,
-              revision: field.revision,
-            })),
-          offers: site.offers.map((item) => ({
-            code: item.code,
-            language: item.language,
-            draftLabel: item.draftLabel,
-            draftPrice: item.draftPrice,
-            revision: item.revision,
-          })),
-        }),
-      );
+      await remember(await saveSite(site.slug, payloadFrom(site, revisions)));
+      setConflict(null);
       setNotice("Draft saved.");
     } catch (caught) {
-      setError(caught.message);
+      if (caught.conflict) setConflict(caught.conflict);
+      else setError(caught.message);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function onSave(event) {
+    event.preventDefault();
+    await sendSave();
+  }
+
+  async function onReload() {
+    setError("");
+    setNotice("");
+    try {
+      remember(await fetchPanelSite(site.slug));
+      setConflict(null);
+      setNotice("Reloaded their version.");
+    } catch (caught) {
+      setError(caught.message);
     }
   }
 
@@ -185,6 +185,7 @@ export function SiteEditor() {
   const currentLanguage = site?.languages.find((item) => item.code === language);
   const available = catalog.filter((item) => !site?.languages.some((row) => row.code === item.code));
   const publishOnly = site?.status !== "draft";
+  const included = site ? fieldsToPublish(site, language, !publishOnly) : [];
   const previewHref = site ? `/s/${site.slug}/preview?lang=${language}` : "/app";
 
   return (
@@ -354,6 +355,48 @@ export function SiteEditor() {
             </section>
           ))}
 
+          {conflict ? (
+            <section className="editor-card conflict-card">
+              <h2>Someone else saved this</h2>
+              <p>
+                {conflict.savedBy?.length ? conflict.savedBy.join(" and ") : "Someone else"} saved this while you were editing.
+                Nothing was overwritten.
+              </p>
+              {conflict.rows?.length ? (
+                <table className="conflict-table">
+                  <thead>
+                    <tr>
+                      <th>Field</th>
+                      <th>Language</th>
+                      <th>Your version</th>
+                      <th>Their version</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {conflict.rows.map((row) => (
+                      <tr key={`${row.kind}-${row.languageCode}-${row.key}`}>
+                        <td>{row.label}</td>
+                        <td>{row.language}</td>
+                        <td>{row.yours}</td>
+                        <td>{row.theirs}{row.savedBy ? ` · ${row.savedBy}` : ""}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p>Your copy is out of date.</p>
+              )}
+              <div className="editor-actions">
+                <button type="button" className="solid-button" disabled={saving} onClick={() => sendSave(conflict.revisions)}>
+                  {saving ? "Saving…" : "Keep mine"}
+                </button>
+                <button type="button" className="quiet-button" onClick={onReload}>
+                  Reload
+                </button>
+              </div>
+            </section>
+          ) : null}
+
           {error ? <p className="form-error">{error}</p> : null}
           {notice ? <p className="form-notice">{notice}</p> : null}
 
@@ -375,10 +418,22 @@ export function SiteEditor() {
               {confirming ? (
                 <>
                   <p>
-                    {publishOnly
-                      ? `Publish ${currentLanguage?.name || "this language"} only. The other languages stay as they are.`
-                      : `This writes a snapshot and makes the draft the public page for ${site.name}.`}
+                    Publish {site.name}
+                    {publishOnly ? ` in ${currentLanguage?.name || "this language"} only. The other languages stay as they are.` : "."}
                   </p>
+                  {included.length ? (
+                    <ul className="publish-fields">
+                      {included.map((row) => (
+                        <li key={`${row.language}-${row.label}`}>
+                          <span>{row.label}</span>
+                          <span>{row.language}</span>
+                          <span>{row.value}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>The public page already matches this draft.</p>
+                  )}
                   <div className="editor-actions">
                     <button type="button" className="solid-button" disabled={publishing} onClick={onPublish}>
                       {publishing ? "Publishing…" : "Publish now"}
@@ -401,6 +456,56 @@ export function SiteEditor() {
       ) : null}
     </PanelFrame>
   );
+}
+
+function payloadFrom(site, revisions = []) {
+  const revisionFor = (kind, languageCode, key, fallback) => {
+    const hit = revisions.find(
+      (row) => row.kind === kind && row.languageCode === languageCode && row.key === key,
+    );
+    return hit ? hit.revision : fallback;
+  };
+  return {
+    theme: site.theme,
+    fields: site.fields
+      .filter((field) => !field.sensitive)
+      .map((field) => ({
+        key: field.key,
+        language: field.language,
+        draftValue: field.draftValue,
+        revision: revisionFor("field", field.language, field.key, field.revision),
+      })),
+    offers: site.offers.map((item) => ({
+      code: item.code,
+      language: item.language,
+      draftLabel: item.draftLabel,
+      draftPrice: item.draftPrice,
+      revision: revisionFor("offer", item.language, item.code, item.revision),
+    })),
+  };
+}
+
+function fieldsToPublish(site, language, wholeSite) {
+  const codes = wholeSite ? site.languages.map((item) => item.code) : [language];
+  const rows = [];
+  for (const code of codes) {
+    const name = site.languages.find((item) => item.code === code)?.name || code;
+    for (const field of site.fields) {
+      if (field.language !== code || field.sensitive) continue;
+      if ((field.draftValue || "") === (field.publishedValue || "")) continue;
+      rows.push({ label: field.label, language: name, value: field.draftValue || "Empty" });
+    }
+    for (const offer of site.offers) {
+      if (offer.language !== code) continue;
+      if ((offer.draftLabel || "") !== (offer.publishedLabel || "")) {
+        rows.push({ label: `${offer.name} name`, language: name, value: offer.draftLabel || "Empty" });
+      }
+      if ((offer.draftPrice || "") !== (offer.publishedPrice || "")) {
+        rows.push({ label: `${offer.name} price`, language: name, value: offer.draftPrice || "Empty" });
+      }
+    }
+  }
+  return rows;
 }
 
 function ColorField({ label, value, disabled, onChange }) {

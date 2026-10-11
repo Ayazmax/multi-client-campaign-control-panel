@@ -65,7 +65,10 @@ app.use((error, _req, res, next) => {
   }
   const status = Number(error.status || error.statusCode);
   if (status >= 400 && status < 500) {
-    res.status(status).json({ error: error.message || "Bad request." });
+    res.status(status).json({
+      error: error.message || "Bad request.",
+      ...(error.conflict ? { conflict: error.conflict } : {}),
+    });
     return;
   }
   console.error(error);

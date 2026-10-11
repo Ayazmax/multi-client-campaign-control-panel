@@ -4,6 +4,6 @@ export const siteDetailInclude = {
   theme: true,
   pages: true,
   analytics: true,
-  contentValues: { include: { field: true, language: true } },
-  siteOffers: { include: { offer: true, language: true } },
+  contentValues: { include: { field: true, language: true, updatedBy: { select: { name: true } } } },
+  siteOffers: { include: { offer: true, language: true, updatedBy: { select: { name: true } } } },
 };

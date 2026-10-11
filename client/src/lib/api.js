@@ -16,6 +16,7 @@ async function request(path, options = {}) {
   if (!response.ok) {
     const error = new Error(body?.error || "The request failed.");
     error.status = response.status;
+    error.conflict = body?.conflict || null;
     throw error;
   }
   return body;

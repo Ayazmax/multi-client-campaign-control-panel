@@ -139,10 +139,9 @@ export async function saveCampaign(tx, site, body, actorId) {
     throw httpError(400, "Send the branding, page text, and offers.");
   }
 
-  await tx.theme.update({
-    where: { siteId: site.id },
-    data: theme,
-  });
+  const pendingFields = [];
+  const pendingOffers = [];
+  const conflicts = [];
 
   for (const item of fields) {
     const key = typeof item?.key === "string" ? item.key : "";
@@ -162,12 +161,21 @@ export async function saveCampaign(tx, site, body, actorId) {
       throw httpError(400, "That text field is not on this website.");
     }
     if (current.revision !== revision) {
-      throw httpError(409, "Someone else saved this page. Reload it and try again.");
+      conflicts.push({
+        kind: "field",
+        key,
+        label: current.field.label,
+        language: current.language.name,
+        languageCode: language,
+        yours: draftValue,
+        theirs: current.draftValue,
+        savedBy: current.updatedBy?.name || "",
+        revision: current.revision,
+        changed: draftValue !== current.draftValue,
+      });
+    } else {
+      pendingFields.push({ id: current.id, draftValue });
     }
-    await tx.contentValue.update({
-      where: { id: current.id },
-      data: { draftValue, revision: { increment: 1 }, updatedById: actorId },
-    });
   }
 
   for (const item of offers) {
@@ -189,13 +197,43 @@ export async function saveCampaign(tx, site, body, actorId) {
       throw httpError(400, "That offer is not on this website.");
     }
     if (current.revision !== revision) {
-      throw httpError(409, "Someone else saved this page. Reload it and try again.");
+      conflicts.push({
+        kind: "offer",
+        key: code,
+        label: current.offer.name,
+        language: current.language.name,
+        languageCode: language,
+        yours: `${draftLabel} · ${draftPrice}`,
+        theirs: `${current.draftLabel} · ${current.draftPrice}`,
+        savedBy: current.updatedBy?.name || "",
+        revision: current.revision,
+        changed: draftLabel !== current.draftLabel || draftPrice !== current.draftPrice,
+      });
+    } else {
+      pendingOffers.push({ id: current.id, draftLabel, draftPrice });
     }
+  }
+
+  if (conflicts.length) throw conflictError(conflicts);
+
+  await tx.theme.update({
+    where: { siteId: site.id },
+    data: theme,
+  });
+
+  for (const item of pendingFields) {
+    await tx.contentValue.update({
+      where: { id: item.id },
+      data: { draftValue: item.draftValue, revision: { increment: 1 }, updatedById: actorId },
+    });
+  }
+
+  for (const item of pendingOffers) {
     await tx.siteOffer.update({
-      where: { id: current.id },
+      where: { id: item.id },
       data: {
-        draftLabel,
-        draftPrice,
+        draftLabel: item.draftLabel,
+        draftPrice: item.draftPrice,
         revision: { increment: 1 },
         updatedById: actorId,
       },
@@ -229,7 +267,11 @@ export async function publishCampaign(tx, site, actor, languageCode) {
     if (!languageIds.has(value.languageId) || value.field.sensitive) continue;
     await tx.contentValue.update({
       where: { id: value.id },
-      data: { publishedValue: value.draftValue, updatedById: actor.id },
+      data: {
+        publishedValue: value.draftValue,
+        revision: { increment: 1 },
+        updatedById: actor.id,
+      },
     });
   }
   for (const row of site.siteOffers) {
@@ -239,6 +281,7 @@ export async function publishCampaign(tx, site, actor, languageCode) {
       data: {
         publishedLabel: row.draftLabel,
         publishedPrice: row.draftPrice,
+        revision: { increment: 1 },
         updatedById: actor.id,
       },
     });
@@ -325,6 +368,34 @@ function readTheme(theme) {
 function httpError(status, message) {
   const error = new Error(message);
   error.status = status;
+  return error;
+}
+
+function conflictError(conflicts) {
+  const names = [...new Set(conflicts.map((row) => row.savedBy).filter(Boolean))];
+  const who = names.length ? joinNames(names) : "Someone else";
+  const error = httpError(409, `${who} saved this while you were editing. Choose which version to keep.`);
+  error.conflict = {
+    savedBy: names,
+    rows: conflicts
+      .filter((row) => row.changed)
+      .map((row) => ({
+        kind: row.kind,
+        key: row.key,
+        label: row.label,
+        language: row.language,
+        languageCode: row.languageCode,
+        yours: row.yours,
+        theirs: row.theirs,
+        savedBy: row.savedBy || "Someone else",
+      })),
+    revisions: conflicts.map((row) => ({
+      kind: row.kind,
+      key: row.key,
+      languageCode: row.languageCode,
+      revision: row.revision,
+    })),
+  };
   return error;
 }
 
