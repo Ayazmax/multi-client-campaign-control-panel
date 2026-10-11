@@ -4,12 +4,17 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../auth.jsx";
 import { PanelNav } from "./PanelFrame.jsx";
 import { fetchHealth, fetchPanelSites } from "../lib/api.js";
+import { notePanelVisit } from "../lib/panelTrail.js";
 
 export function PanelHome() {
   const { user, logout } = useAuth();
   const [health, setHealth] = useState({ state: "loading" });
   const [workspaces, setWorkspaces] = useState(null);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    notePanelVisit("/app");
+  }, []);
 
   useEffect(() => {
     let active = true;

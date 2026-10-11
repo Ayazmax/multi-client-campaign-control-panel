@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { notePanelVisit, stepBack } from "../lib/panelTrail.js";
 
 const NAV = {
   en: { home: "Home", offers: "Offers", contact: "Contact" },
@@ -34,6 +35,8 @@ export function CampaignSite({
     : `Page not found | ${site.name}`;
   const description = knownPage ? copy[`${pageKey}.seo.description`] || "" : "";
   const heading = knownPage ? copy[`${pageKey}.h1`] || site.name : "This page is not on the website";
+  const location = useLocation();
+  const navigate = useNavigate();
   const currentLanguage = languages.find((item) => item.code === language);
   const theme = site.theme || {};
   const links = {
@@ -41,6 +44,10 @@ export function CampaignSite({
     offers: href(site.slug, "offers", language, preview, languages),
     contact: href(site.slug, "contact", language, preview, languages),
   };
+
+  useEffect(() => {
+    if (preview) notePanelVisit(location.pathname);
+  }, [location.pathname, preview]);
 
   useEffect(() => {
     document.title = preview ? `Preview: ${title}` : title;
@@ -65,10 +72,21 @@ export function CampaignSite({
     >
       {preview ? (
         <p className="preview-banner">
-          Draft preview
-          {currentLanguage?.status === "draft"
-            ? ` · ${currentLanguage.nativeName || currentLanguage.name} is not on the public site`
-            : ""}
+          <button
+            type="button"
+            onClick={() => {
+              const target = stepBack(location.pathname);
+              if (target) navigate(target);
+            }}
+          >
+            Back
+          </button>
+          <span>
+            Draft preview
+            {currentLanguage?.status === "draft"
+              ? ` · ${currentLanguage.nativeName || currentLanguage.name} is not on the public site`
+              : ""}
+          </span>
         </p>
       ) : null}
       <header className="campaign-header">

@@ -315,6 +315,82 @@ button[type="submit"],
   max-width: 46rem;
 }
 
+.editor-form.site-review {
+  max-width: none;
+}
+
+@media (min-width: 960px) {
+  .editor-form.site-review {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .editor-form.site-review > .editor-card {
+    max-width: none;
+  }
+
+  .editor-form.site-review > .span-row {
+    grid-column: 1 / -1;
+  }
+}
+
+.back-link {
+  display: inline-block;
+  margin: 0 0 0.35rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #0f6e56;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.review-note {
+  margin: 0;
+  align-self: start;
+}
+
+.publish-dock {
+  position: fixed;
+  z-index: 20;
+  left: 240px;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.85rem 2.5rem 1rem;
+  border-top: 1px solid #e2d9cc;
+  background: #fffdf8;
+  box-shadow: 0 -10px 28px rgba(28, 25, 21, 0.08);
+}
+
+.panel-main:has(.publish-dock) {
+  padding-bottom: 6.5rem;
+}
+
+.publish-confirm {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.publish-confirm > div:first-child {
+  min-width: 0;
+  max-height: 40vh;
+  overflow: auto;
+}
+
+.publish-confirm p {
+  color: #4e473f;
+}
+
+.publish-confirm .editor-actions {
+  flex: none;
+}
+
 .editor-card {
   display: grid;
   gap: 0.85rem;
@@ -762,11 +838,25 @@ button.texty {
 }
 
 .preview-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
   margin: 0;
   padding: 0.55rem 1.25rem;
   background: #f3e4c4;
   color: #6d4e12;
   font-weight: 700;
+}
+
+.preview-banner button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #6d4e12;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .campaign-header {
@@ -1127,6 +1217,21 @@ button.texty {
 
   .bulk-screen {
     grid-template-columns: 1fr;
+  }
+
+  .editor-form.site-review {
+    grid-template-columns: 1fr;
+  }
+
+  .publish-dock {
+    left: 0;
+    padding-left: 1.1rem;
+    padding-right: 1.1rem;
+  }
+
+  .publish-confirm {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .bulk-lang-head,

@@ -190,6 +190,7 @@ export function SiteEditor() {
 
   return (
     <PanelFrame
+      back
       title={site?.name || "Website"}
       lede={site ? `${site.client.name} · ${site.status}` : "Loading the draft."}
       actions={site ? <Link to={previewHref}>Preview</Link> : null}
@@ -197,7 +198,8 @@ export function SiteEditor() {
       {!site && error ? <p className="form-error">{error}</p> : null}
       {!site && !error ? <p className="page-loading">Loading website…</p> : null}
       {site ? (
-        <form className="editor-form" onSubmit={onSave}>
+        <>
+        <form className="editor-form site-review" onSubmit={onSave}>
           <section className="editor-card">
             <h2>Branding</h2>
             <div className="field-grid">
@@ -303,7 +305,7 @@ export function SiteEditor() {
           </section>
 
           {site.languages.length > 1 ? (
-            <div className="lang-tabs" role="tablist">
+            <div className="lang-tabs span-row" role="tablist">
               {site.languages.map((item) => (
                 <button
                   key={item.code}
@@ -355,8 +357,12 @@ export function SiteEditor() {
             </section>
           ))}
 
+          {!canPublish ? (
+            <p className="site-meta review-note span-row">An owner or reviewer publishes this website.</p>
+          ) : null}
+
           {conflict ? (
-            <section className="editor-card conflict-card">
+            <section className="editor-card conflict-card span-row">
               <h2>Someone else saved this</h2>
               <p>
                 {conflict.savedBy?.length ? conflict.savedBy.join(" and ") : "Someone else"} saved this while you were editing.
@@ -397,10 +403,10 @@ export function SiteEditor() {
             </section>
           ) : null}
 
-          {error ? <p className="form-error">{error}</p> : null}
-          {notice ? <p className="form-notice">{notice}</p> : null}
+          {error ? <p className="form-error span-row">{error}</p> : null}
+          {notice ? <p className="form-notice span-row">{notice}</p> : null}
 
-          <div className="editor-actions">
+          <div className="editor-actions span-row">
             {canEdit ? (
               <button type="submit" className="solid-button" disabled={saving}>
                 {saving ? "Saving…" : "Save draft"}
@@ -411,12 +417,12 @@ export function SiteEditor() {
             <Link to={previewHref}>Preview</Link>
             {site.status === "live" ? <Link to={`/s/${site.slug}`}>Public page</Link> : null}
           </div>
-
-          {canPublish ? (
-            <section className="editor-card">
-              <h2>Publish</h2>
-              {confirming ? (
-                <>
+        </form>
+        {canPublish ? (
+          <div className="publish-dock">
+            {confirming ? (
+              <div className="publish-confirm">
+                <div>
                   <p>
                     Publish {site.name}
                     {publishOnly ? ` in ${currentLanguage?.name || "this language"} only. The other languages stay as they are.` : "."}
@@ -434,25 +440,24 @@ export function SiteEditor() {
                   ) : (
                     <p>The public page already matches this draft.</p>
                   )}
-                  <div className="editor-actions">
-                    <button type="button" className="solid-button" disabled={publishing} onClick={onPublish}>
-                      {publishing ? "Publishing…" : "Publish now"}
-                    </button>
-                    <button type="button" className="quiet-button" onClick={() => setConfirming(false)}>
-                      Back
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <button type="button" className="solid-button" onClick={() => setConfirming(true)}>
-                  {publishOnly ? `Publish ${currentLanguage?.nativeName || "language"}` : "Publish"}
-                </button>
-              )}
-            </section>
-          ) : (
-            <p className="site-meta">An owner or reviewer publishes this website.</p>
-          )}
-        </form>
+                </div>
+                <div className="editor-actions">
+                  <button type="button" className="solid-button" disabled={publishing} onClick={onPublish}>
+                    {publishing ? "Publishing…" : "Publish now"}
+                  </button>
+                  <button type="button" className="quiet-button" onClick={() => setConfirming(false)}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button type="button" className="solid-button" onClick={() => setConfirming(true)}>
+                {publishOnly ? `Publish ${currentLanguage?.nativeName || "language"}` : "Publish"}
+              </button>
+            )}
+          </div>
+        ) : null}
+        </>
       ) : null}
     </PanelFrame>
   );
