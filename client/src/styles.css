@@ -85,6 +85,16 @@ a {
   text-decoration: none;
 }
 
+.panel-rail nav {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.panel-rail nav a.nav-quiet {
+  background: transparent;
+  color: #c8bfb2;
+}
+
 .panel-main {
   padding: 2rem 2.5rem 3rem;
 }
@@ -445,6 +455,147 @@ button.texty {
   padding: 0.4rem 0;
   border-top: 1px solid #e2d9cc;
   font-weight: 400;
+}
+
+.bulk-screen {
+  max-width: none;
+  grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+  align-items: start;
+}
+
+.bulk-screen .editor-card {
+  max-width: none;
+}
+
+.bulk-screen .bulk-review {
+  grid-column: 1 / -1;
+}
+
+.bulk-options {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.bulk-screen .bulk-option,
+.bulk-screen .bulk-check {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: auto;
+  font-weight: 650;
+}
+
+.bulk-screen .bulk-option input,
+.bulk-screen .bulk-check input {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+  padding: 0;
+  flex: none;
+}
+
+.bulk-screen .bulk-value {
+  display: grid;
+  gap: 0.3rem;
+  font-weight: 700;
+}
+
+.bulk-lang-head,
+.bulk-langs li {
+  display: grid;
+  grid-template-columns: minmax(9rem, 1fr) 7rem 7.5rem;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.bulk-lang-head {
+  margin: 0.2rem 0 0 1.75rem;
+  padding: 0 0.55rem;
+  color: #6d6458;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.bulk-lang-head span:first-child {
+  padding-left: 1.7rem;
+}
+
+.bulk-lang-head span:last-child,
+.bulk-now {
+  text-align: right;
+}
+
+.bulk-sites {
+  display: grid;
+}
+
+.bulk-site {
+  padding: 0.85rem 0 0.35rem;
+  border-top: 1px solid #e2d9cc;
+}
+
+.bulk-site-name {
+  font-size: 1.05rem;
+}
+
+.bulk-langs {
+  margin: 0.35rem 0 0;
+  padding: 0 0 0 1.75rem;
+  list-style: none;
+}
+
+.bulk-langs li {
+  padding: 0.28rem 0.55rem;
+  border-radius: 8px;
+}
+
+.bulk-langs li.is-on {
+  background: #f6f1e8;
+}
+
+.bulk-langs .badge {
+  margin: 0;
+  justify-self: start;
+  text-transform: capitalize;
+}
+
+.bulk-now {
+  font-weight: 700;
+}
+
+.bulk-table-wrap {
+  overflow-x: auto;
+}
+
+.bulk-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.bulk-table th,
+.bulk-table td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid #e2d9cc;
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.bulk-table th {
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6d6458;
+}
+
+.bulk-table tr.is-included td:last-child {
+  font-weight: 750;
+}
+
+.bulk-excluded td {
+  color: #8a8175;
 }
 
 .login-shell {
@@ -929,6 +1080,16 @@ button.texty {
   .campaign-tools,
   .campaign-footer nav {
     justify-self: start;
+  }
+
+  .bulk-screen {
+    grid-template-columns: 1fr;
+  }
+
+  .bulk-lang-head,
+  .bulk-langs li {
+    grid-template-columns: minmax(6.5rem, 1fr) auto auto;
+    gap: 0.4rem;
   }
 
   .hero,

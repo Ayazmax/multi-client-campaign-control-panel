@@ -1,7 +1,24 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth.jsx";
 
-export function PanelFrame({ title, lede, actions, children }) {
+export function PanelNav({ section }) {
+  return (
+    <>
+      {section === "websites" ? (
+        <span className="nav-current">Websites</span>
+      ) : (
+        <Link className="nav-quiet" to="/app">Websites</Link>
+      )}
+      {section === "bulk" ? (
+        <span className="nav-current">Update several</span>
+      ) : (
+        <Link className="nav-quiet" to="/app/bulk">Update several</Link>
+      )}
+    </>
+  );
+}
+
+export function PanelFrame({ title, lede, actions, section = "websites", children }) {
   const { logout } = useAuth();
   return (
     <div className="panel-shell">
@@ -9,7 +26,7 @@ export function PanelFrame({ title, lede, actions, children }) {
         <p className="wordmark">Operations</p>
         <p className="rail-note">Campaign websites</p>
         <nav>
-          <Link to="/app">Websites</Link>
+          <PanelNav section={section} />
         </nav>
       </aside>
       <main className="panel-main">

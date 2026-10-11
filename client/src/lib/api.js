@@ -47,6 +47,18 @@ export function fetchPanelSites() {
   return request("/api/panel/sites");
 }
 
+export function fetchBulk(item) {
+  const query = item ? `?item=${encodeURIComponent(item)}` : "";
+  return request(`/api/panel/bulk${query}`);
+}
+
+export function applyBulk(body) {
+  return request("/api/panel/bulk", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
 export function fetchPanelSite(slug) {
   return request(`/api/panel/sites/${slug}`);
 }

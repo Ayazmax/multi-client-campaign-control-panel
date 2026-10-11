@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, RequireAuth } from "./auth.jsx";
+import { BulkUpdate } from "./components/BulkUpdate.jsx";
 import { CloneCampaign } from "./components/CloneCampaign.jsx";
 import { PanelHome } from "./components/PanelHome.jsx";
 import { SiteEditor } from "./components/SiteEditor.jsx";
@@ -8,6 +9,7 @@ import { PublicSite } from "./pages/PublicSite.jsx";
 
 // Routes only. The website list is components/PanelHome.jsx.
 // The campaign form is components/SiteEditor.jsx.
+// A change across websites is components/BulkUpdate.jsx.
 // The public website is pages/CampaignSite.jsx.
 export function App() {
   return (
@@ -20,6 +22,14 @@ export function App() {
           element={
             <RequireAuth>
               <PanelHome />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/app/bulk"
+          element={
+            <RequireAuth>
+              <BulkUpdate />
             </RequireAuth>
           }
         />

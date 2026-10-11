@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth.jsx";
+import { PanelNav } from "./PanelFrame.jsx";
 import { fetchHealth, fetchPanelSites } from "../lib/api.js";
 
 export function PanelHome() {
@@ -37,7 +38,7 @@ export function PanelHome() {
         <p className="wordmark">Operations</p>
         <p className="rail-note">Campaign websites</p>
         <nav>
-          <span className="nav-current">Websites</span>
+          <PanelNav section="websites" />
         </nav>
       </aside>
       <main className="panel-main">

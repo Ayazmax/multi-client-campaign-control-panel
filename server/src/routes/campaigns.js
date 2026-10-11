@@ -328,6 +328,257 @@ function httpError(status, message) {
   return error;
 }
 
+const BULK_ITEMS = {
+  "offer.festive-fibre.price": {
+    kind: "offer",
+    code: "festive-fibre",
+    field: "Offer price",
+    label: "Festive Fibre Plan price",
+  },
+  "contact.phone": {
+    kind: "phone",
+    field: "Phone",
+    label: "Contact phone",
+  },
+};
+
+const COUNT_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+
+function readBulkBody(body) {
+  const item = BULK_ITEMS[body?.item];
+  if (!item) throw httpError(400, "Choose the offer price or the contact phone.");
+  const value = typeof body?.value === "string" ? body.value.trim() : "";
+  if (!value) throw httpError(400, "Enter the new value.");
+  if (value.length > (item.kind === "offer" ? 40 : 80)) throw httpError(400, "Shorten the new value.");
+  if (!Array.isArray(body?.targets) || body.targets.length === 0) {
+    throw httpError(400, "Choose at least one website.");
+  }
+  const targets = body.targets.map((target) => {
+    const slug = typeof target?.slug === "string" ? target.slug : "";
+    const languages = Array.isArray(target?.languages)
+      ? [...new Set(target.languages.filter((code) => typeof code === "string" && code))]
+      : [];
+    if (!slug || languages.length === 0) throw httpError(400, "Each website needs a language.");
+    return { slug, languages };
+  });
+  return { itemKey: body.item, item, value, targets };
+}
+
+async function visibleSites(user) {
+  const sites = await prisma.site.findMany({
+    include: siteDetailInclude,
+    orderBy: { name: "asc" },
+  });
+  return sites.filter((site) => canAccessClient(user, site.client));
+}
+
+function languageRank(code) {
+  return { en: 0, ta: 1, si: 2 }[code] ?? 9;
+}
+
+function cellValue(site, language, item) {
+  if (item.kind === "offer") {
+    const row = site.siteOffers.find(
+      (offer) => offer.offer.code === item.code && offer.languageId === language.languageId,
+    );
+    return { draft: row?.draftPrice || "", published: row?.publishedPrice || "" };
+  }
+  const value = site.contentValues.find(
+    (entry) => entry.field.key === "contact.phone" && entry.languageId === language.languageId && !entry.field.sensitive,
+  );
+  return { draft: value?.draftValue || "", published: value?.publishedValue || "" };
+}
+
+function bulkMatrix(sites, user, itemKey) {
+  const item = BULK_ITEMS[itemKey] || BULK_ITEMS["offer.festive-fibre.price"];
+  return {
+    items: Object.entries(BULK_ITEMS).map(([key, entry]) => ({
+      key,
+      label: entry.label,
+      field: entry.field,
+    })),
+    item: itemKey && BULK_ITEMS[itemKey] ? itemKey : "offer.festive-fibre.price",
+    sites: sites.map((site) => ({
+      slug: site.slug,
+      name: site.name,
+      status: site.status,
+      client: site.client.name,
+      canEdit: canEditSite(user, site.client),
+      canPublish: canPublishSite(user, site.client),
+      languages: [...site.siteLanguages]
+        .sort((left, right) => languageRank(left.language.code) - languageRank(right.language.code))
+        .map((language) => {
+          const values = cellValue(site, language, item);
+          return {
+            code: language.language.code,
+            name: language.language.name,
+            nativeName: language.language.nativeName,
+            status: language.status,
+            current: values.draft,
+            published: values.published,
+          };
+        }),
+    })),
+  };
+}
+
+async function applyBulk(user, body) {
+  const { itemKey, item, value, targets } = readBulkBody(body);
+  const mode = body?.mode === "publish" ? "publish" : body?.mode === "draft" ? "draft" : "";
+  if (!mode) throw httpError(400, "Save the change as a draft, or publish it.");
+  const sites = await visibleSites(user);
+  const bySlug = new Map(sites.map((site) => [site.slug, site]));
+  const chosen = targets.map((target) => {
+    const site = bySlug.get(target.slug);
+    if (!site) throw httpError(404, "Website not found.");
+    if (mode === "draft" && !canEditSite(user, site.client)) {
+      throw httpError(403, "An editor or owner saves changes.");
+    }
+    if (mode === "publish" && !canPublishSite(user, site.client)) {
+      throw httpError(403, "An owner or reviewer publishes a website.");
+    }
+    const languages = target.languages.map((code) => {
+      const language = site.siteLanguages.find((entry) => entry.language.code === code);
+      if (!language) throw httpError(400, `${site.name} does not have that language.`);
+      return language;
+    });
+    return { site, languages };
+  });
+
+  const previous = [];
+  for (const target of chosen) {
+    for (const language of target.languages) {
+      previous.push(cellValue(target.site, language, item).draft);
+    }
+  }
+
+  const changedSiteIds = await prisma.$transaction(async (tx) => {
+    const touched = new Set();
+    for (const target of chosen) {
+      for (const language of target.languages) {
+        const publishValue = mode === "publish" && language.status === "published";
+        if (item.kind === "offer") {
+          await writeOffer(tx, target.site, language, item.code, value, publishValue, user.id);
+        } else {
+          await writePhone(tx, target.site, language, value, publishValue, user.id);
+        }
+        if (publishValue) touched.add(target.site.id);
+      }
+    }
+    for (const siteId of touched) {
+      const full = await tx.site.findUnique({ where: { id: siteId }, include: siteDetailInclude });
+      const snapshot = await tx.snapshot.create({
+        data: {
+          siteId,
+          kind: "publish",
+          label: `${item.label} is now ${value}.`,
+          payload: snapshotPayload(full),
+          createdById: user.id,
+        },
+      });
+      await tx.site.update({
+        where: { id: siteId },
+        data: { status: "live", liveSnapshotId: snapshot.id },
+      });
+    }
+    const names = [...new Set(chosen.flatMap((target) => target.languages.map((language) => language.language.name)))];
+    names.sort((left, right) => languageRank(codeFor(chosen, left)) - languageRank(codeFor(chosen, right)));
+    const fromValues = [...new Set(previous.filter(Boolean))];
+    const fromText = fromValues.length === 1 ? `from ${fromValues[0]} ` : "";
+    const siteCount = new Set(chosen.map((target) => target.site.id)).size;
+    const countWord = COUNT_WORDS[siteCount] || String(siteCount);
+    const draftNote = mode === "draft" ? "was saved as a draft, " : "changed ";
+    const sentence = `${item.label} ${draftNote}${fromText}to ${value} in ${joinNames(names)} on ${countWord} ${siteCount === 1 ? "website" : "websites"}, by ${user.name}, on ${historyDate(new Date())}.`;
+    const workspaceIds = [...new Set(chosen.map((target) => target.site.client.workspaceId))];
+    for (const workspaceId of workspaceIds) {
+      const ids = chosen
+        .filter((target) => target.site.client.workspaceId === workspaceId)
+        .map((target) => target.site.id);
+      await tx.historyEvent.create({
+        data: {
+          workspaceId,
+          actorId: user.id,
+          sentence,
+          siteIds: [...new Set(ids)],
+        },
+      });
+    }
+    return sentence;
+  }, { timeout: 20000 });
+
+  return { sentence: changedSiteIds, mode, item: itemKey };
+}
+
+function codeFor(chosen, name) {
+  for (const target of chosen) {
+    const match = target.languages.find((language) => language.language.name === name);
+    if (match) return match.language.code;
+  }
+  return "";
+}
+
+async function writeOffer(tx, site, language, code, value, publishValue, actorId) {
+  const current = site.siteOffers.find(
+    (row) => row.offer.code === code && row.languageId === language.languageId,
+  );
+  if (current) {
+    await tx.siteOffer.update({
+      where: { id: current.id },
+      data: {
+        draftPrice: value,
+        ...(publishValue ? { publishedPrice: value } : {}),
+        revision: { increment: 1 },
+        updatedById: actorId,
+      },
+    });
+    return;
+  }
+  const offer = await tx.offer.findUnique({ where: { code } });
+  if (!offer) throw httpError(400, "That offer is not in the catalog.");
+  await tx.siteOffer.create({
+    data: {
+      siteId: site.id,
+      offerId: offer.id,
+      languageId: language.languageId,
+      draftLabel: offer.name,
+      publishedLabel: publishValue ? offer.name : null,
+      draftPrice: value,
+      publishedPrice: publishValue ? value : null,
+      updatedById: actorId,
+    },
+  });
+}
+
+async function writePhone(tx, site, language, value, publishValue, actorId) {
+  const current = site.contentValues.find(
+    (entry) => entry.field.key === "contact.phone" && entry.languageId === language.languageId,
+  );
+  if (current) {
+    await tx.contentValue.update({
+      where: { id: current.id },
+      data: {
+        draftValue: value,
+        ...(publishValue ? { publishedValue: value } : {}),
+        revision: { increment: 1 },
+        updatedById: actorId,
+      },
+    });
+    return;
+  }
+  const field = await tx.contentField.findUnique({ where: { key: "contact.phone" } });
+  if (!field || field.sensitive) throw httpError(400, "The contact phone is not on this website.");
+  await tx.contentValue.create({
+    data: {
+      siteId: site.id,
+      fieldId: field.id,
+      languageId: language.languageId,
+      draftValue: value,
+      publishedValue: publishValue ? value : null,
+      updatedById: actorId,
+    },
+  });
+}
+
 const listInclude = {
   client: { include: { workspace: true } },
   siteLanguages: { include: { language: true } },
@@ -335,6 +586,25 @@ const listInclude = {
 
 export const campaignsRouter = Router();
 campaignsRouter.use(requireUser);
+
+campaignsRouter.get("/bulk", async (req, res, next) => {
+  try {
+    const item = typeof req.query.item === "string" ? req.query.item : "offer.festive-fibre.price";
+    const sites = await visibleSites(req.user);
+    res.json(bulkMatrix(sites, req.user, item));
+  } catch (error) {
+    next(error);
+  }
+});
+
+campaignsRouter.post("/bulk", async (req, res, next) => {
+  try {
+    const result = await applyBulk(req.user, req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
 
 campaignsRouter.get("/sites", async (req, res, next) => {
   try {
