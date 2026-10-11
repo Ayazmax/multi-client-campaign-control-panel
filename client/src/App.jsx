@@ -2,7 +2,11 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, RequireAuth } from "./auth.jsx";
 import { BulkUpdate } from "./components/BulkUpdate.jsx";
 import { CloneCampaign } from "./components/CloneCampaign.jsx";
+import { HistoryList } from "./components/HistoryList.jsx";
+import { MoveSite } from "./components/MoveSite.jsx";
 import { PanelHome } from "./components/PanelHome.jsx";
+import { RestoreVersion } from "./components/RestoreVersion.jsx";
+import { BackupReview, SiteBackups } from "./components/SiteBackups.jsx";
 import { SiteEditor } from "./components/SiteEditor.jsx";
 import { Login } from "./pages/Login.jsx";
 import { PublicSite } from "./pages/PublicSite.jsx";
@@ -30,6 +34,46 @@ export function App() {
           element={
             <RequireAuth>
               <BulkUpdate />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/app/history"
+          element={
+            <RequireAuth>
+              <HistoryList />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/app/sites/:slug/restore/:snapshotId"
+          element={
+            <RequireAuth>
+              <RestoreVersion />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/app/sites/:slug/backups/:backupId"
+          element={
+            <RequireAuth>
+              <BackupReview />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/app/sites/:slug/backups"
+          element={
+            <RequireAuth>
+              <SiteBackups />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/app/sites/:slug/move"
+          element={
+            <RequireAuth>
+              <MoveSite />
             </RequireAuth>
           }
         />

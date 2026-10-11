@@ -16,6 +16,11 @@ export function PanelNav({ section }) {
       ) : (
         <Link className="nav-quiet" to="/app/bulk">Update several</Link>
       )}
+      {section === "history" ? (
+        <span className="nav-current">History</span>
+      ) : (
+        <Link className="nav-quiet" to="/app/history">History</Link>
+      )}
     </>
   );
 }

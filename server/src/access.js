@@ -21,6 +21,15 @@ export function canPublishSite(user, client) {
   return role === "owner" || role === "reviewer";
 }
 
+export function canRestoreVersion(user, client) {
+  return canPublishSite(user, client);
+}
+
+export function canOwnSite(user, client) {
+  if (!canAccessClient(user, client)) return false;
+  return membershipFor(user, client)?.role === "owner";
+}
+
 export function toAuthUser(user) {
   return {
     id: user.id,

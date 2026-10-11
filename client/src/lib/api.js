@@ -102,3 +102,40 @@ export function importTranslation(slug, body) {
     body: JSON.stringify(body),
   });
 }
+
+export function fetchHistory(site) {
+  const query = site ? `?site=${encodeURIComponent(site)}` : "";
+  return request(`/api/panel/history${query}`);
+}
+
+export function fetchVersion(slug, snapshotId) {
+  return request(`/api/panel/sites/${slug}/versions/${snapshotId}`);
+}
+
+export function restoreVersion(slug, snapshotId) {
+  return request(`/api/panel/sites/${slug}/versions/${snapshotId}/restore`, { method: "POST" });
+}
+
+export function fetchBackups(slug) {
+  return request(`/api/panel/sites/${slug}/backups`);
+}
+
+export function createBackup(slug) {
+  return request(`/api/panel/sites/${slug}/backups`, { method: "POST" });
+}
+
+export function fetchBackup(slug, backupId) {
+  return request(`/api/panel/sites/${slug}/backups/${backupId}`);
+}
+
+export function restoreBackup(slug, backupId) {
+  return request(`/api/panel/sites/${slug}/backups/${backupId}/restore`, { method: "POST" });
+}
+
+export function fetchTransfer(slug) {
+  return request(`/api/panel/sites/${slug}/transfer`);
+}
+
+export function transferSite(slug) {
+  return request(`/api/panel/sites/${slug}/transfer`, { method: "POST" });
+}

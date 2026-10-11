@@ -43,6 +43,14 @@ export function stepBack(path) {
 function parentPath(path) {
   const clone = path.match(/^\/app\/sites\/([^/]+)\/clone$/);
   if (clone) return `/app/sites/${clone[1]}`;
+  const restore = path.match(/^\/app\/sites\/([^/]+)\/restore\//);
+  if (restore) return `/app/history?site=${restore[1]}`;
+  const backupReview = path.match(/^\/app\/sites\/([^/]+)\/backups\/[^/]+$/);
+  if (backupReview) return `/app/sites/${backupReview[1]}/backups`;
+  const backups = path.match(/^\/app\/sites\/([^/]+)\/backups$/);
+  if (backups) return `/app/sites/${backups[1]}`;
+  const move = path.match(/^\/app\/sites\/([^/]+)\/move$/);
+  if (move) return `/app/sites/${move[1]}`;
   if (path.startsWith("/app/sites/")) return "/app";
   const preview = path.match(/^\/s\/([^/]+)\/preview/);
   if (preview) return `/app/sites/${preview[1]}`;

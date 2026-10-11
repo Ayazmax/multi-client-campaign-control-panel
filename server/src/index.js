@@ -8,6 +8,7 @@ import { attachUser } from "./loadUser.js";
 import { authRouter } from "./routes/auth.js";
 import { campaignsRouter } from "./routes/campaigns.js";
 import { languagesRouter } from "./routes/languages.js";
+import { recordsRouter } from "./routes/records.js";
 import { publicRouter } from "./routes/publicSite.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -15,7 +16,9 @@ dotenv.config({ path: path.join(__dirname, "../.env") });
 
 // Wires the API. Columns live in prisma/schema.prisma.
 // Sign-in is routes/auth.js. One campaign is routes/campaigns.js.
-// Languages are routes/languages.js. The public site is routes/publicSite.js.
+// Languages are routes/languages.js.
+// History, backups, and moving a site are routes/records.js.
+// The public site is routes/publicSite.js.
 const app = express();
 const port = Number(process.env.PORT) || 4000;
 const origins = (process.env.CLIENT_ORIGIN || "http://localhost:5173")
@@ -52,6 +55,7 @@ app.get("/health", async (_req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/panel", campaignsRouter);
 app.use("/api/panel", languagesRouter);
+app.use("/api/panel", recordsRouter);
 app.use("/api/public", publicRouter);
 
 app.use((error, _req, res, next) => {

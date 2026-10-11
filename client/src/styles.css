@@ -351,6 +351,79 @@ button[type="submit"],
   align-self: start;
 }
 
+.site-safeguards,
+.record-card {
+  max-width: none;
+}
+
+.site-safeguards {
+  margin-bottom: 1rem;
+}
+
+.history-filter {
+  display: grid;
+  gap: 0.35rem;
+  max-width: 22rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.history-filter select {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #d9d0c3;
+  border-radius: 8px;
+  background: #fffdf8;
+  font: inherit;
+  font-weight: 400;
+}
+
+.history-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.history-row {
+  display: grid;
+  gap: 0.45rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid #e2d9cc;
+  border-radius: 14px;
+  background: #fffdf8;
+}
+
+.history-offers,
+.leftover-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: #4e473f;
+}
+
+.leftover-list li {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.55rem 0;
+  border-top: 1px solid #e2d9cc;
+}
+
+.leftover-list li span:first-child {
+  font-weight: 700;
+}
+
+.history-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.history-meta a,
+.history-row > a {
+  color: #0f6e56;
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .publish-dock {
   position: fixed;
   z-index: 20;
@@ -399,6 +472,11 @@ button[type="submit"],
   border: 1px solid #e2d9cc;
   border-radius: 14px;
   background: #fffdf8;
+}
+
+.editor-card.record-card,
+.editor-card.site-safeguards {
+  max-width: none;
 }
 
 .editor-card h2 {

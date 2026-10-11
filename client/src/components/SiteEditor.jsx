@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../auth.jsx";
-import { addSiteLanguage, fetchPanelSite, importTranslation, publishSite, saveSite } from "../lib/api.js";
+import { addSiteLanguage, createBackup, fetchPanelSite, importTranslation, publishSite, saveSite } from "../lib/api.js";
 import { PanelFrame } from "./PanelFrame.jsx";
 
 const SECTIONS = [
@@ -57,6 +57,20 @@ export function SiteEditor() {
     : "";
   const canEdit = role === "owner" || role === "editor";
   const canPublish = role === "owner" || role === "reviewer";
+  const destination = site
+    ? user.memberships.find((item) => item.role === "owner" && item.workspace.id !== site.workspace.id)
+    : null;
+
+  async function onBackup() {
+    setError("");
+    setNotice("");
+    try {
+      const body = await createBackup(slug);
+      setNotice(body.sentence);
+    } catch (caught) {
+      setError(caught.message);
+    }
+  }
 
   function updateTheme(key, value) {
     setSite((current) => ({ ...current, theme: { ...current.theme, [key]: value } }));
@@ -199,6 +213,21 @@ export function SiteEditor() {
       {!site && !error ? <p className="page-loading">Loading website…</p> : null}
       {site ? (
         <>
+        <section className="editor-card site-safeguards">
+          <h2>History and copies</h2>
+          <div className="editor-actions">
+            <Link to={`/app/history?site=${site.slug}`}>History</Link>
+            {role === "owner" ? (
+              <>
+                <button type="button" className="solid-button" onClick={onBackup}>
+                  Back up this website
+                </button>
+                <Link to={`/app/sites/${site.slug}/backups`}>Restore a backup</Link>
+                {destination ? <Link to={`/app/sites/${site.slug}/move`}>Move to {destination.workspace.name}</Link> : null}
+              </>
+            ) : null}
+          </div>
+        </section>
         <form className="editor-form site-review" onSubmit={onSave}>
           <section className="editor-card">
             <h2>Branding</h2>
