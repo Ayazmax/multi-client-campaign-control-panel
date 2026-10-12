@@ -5,6 +5,7 @@ import { prisma } from "../db.js";
 import { canAccessClient, canEditSite, canOwnSite, canPublishSite } from "../access.js";
 import { requireUser } from "../loadUser.js";
 import { toStaffSiteSummary } from "../serialize.js";
+import { CAMPAIGN_FONTS } from "../fonts.js";
 import { historyDate, joinNames, snapshotPayload } from "../snapshot.js";
 import { siteDetailInclude } from "../siteInclude.js";
 import { loadSite, present } from "./staffSite.js";
@@ -422,8 +423,8 @@ function readTheme(theme) {
   if (![primaryColor, secondaryColor, accentColor].every((color) => HEX.test(color))) {
     throw httpError(400, "Colours need a hex value such as #0f6e56.");
   }
-  if (!fontFamily || fontFamily.length > 80) {
-    throw httpError(400, "Enter a font name.");
+  if (!CAMPAIGN_FONTS.includes(fontFamily)) {
+    throw httpError(400, "Choose a font from the list.");
   }
   if (logoUrl && !/^https?:\/\//.test(logoUrl)) {
     throw httpError(400, "The logo needs a full image address starting with http.");

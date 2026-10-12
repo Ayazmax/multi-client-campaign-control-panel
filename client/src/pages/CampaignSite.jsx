@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { FontFaces } from "../components/FontFaces.jsx";
 import { notePanelVisit, stepBack } from "../lib/panelTrail.js";
 
 const NAV = {
@@ -70,6 +71,7 @@ export function CampaignSite({
         "--brand-font": `"${theme.fontFamily || "Source Serif 4"}"`,
       }}
     >
+      <FontFaces families={[theme.fontFamily || "Source Serif 4"]} />
       {site.analytics?.gaMeasurementId || site.analytics?.gtmContainerId ? (
         <p className="analytics-head">
           <span>Demo only. These IDs are not sent to Google.</span>

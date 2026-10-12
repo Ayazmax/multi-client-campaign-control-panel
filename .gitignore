@@ -5,3 +5,6 @@ server/.env
 *.log
 .DS_Store
 Senior Full Stack Developer Round 2.docx
+/test-results/
+/playwright-report/
+/blob-report/

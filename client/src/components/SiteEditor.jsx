@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../auth.jsx";
 import { addSiteLanguage, createBackup, failLaunch, fetchPanelSite, importTranslation, publishSite, saveAnalytics, saveSite } from "../lib/api.js";
+import { FontField } from "./FontField.jsx";
 import { PanelFrame } from "./PanelFrame.jsx";
 
 const SECTIONS = [
@@ -342,14 +343,11 @@ export function SiteEditor() {
                 disabled={!canEdit}
                 onChange={(value) => updateTheme("accentColor", value)}
               />
-              <label>
-                Font
-                <input
-                  value={site.theme?.fontFamily || ""}
-                  disabled={!canEdit}
-                  onChange={(event) => updateTheme("fontFamily", event.target.value)}
-                />
-              </label>
+              <FontField
+                value={site.theme?.fontFamily || ""}
+                disabled={!canEdit}
+                onChange={(next) => updateTheme("fontFamily", next)}
+              />
               <label>
                 Logo address
                 <input

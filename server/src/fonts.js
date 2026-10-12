@@ -1,0 +1,16 @@
+export const CAMPAIGN_FONTS = [
+  "DM Sans",
+  "Figtree",
+  "Fraunces",
+  "Libre Baskerville",
+  "Literata",
+  "Lora",
+  "Manrope",
+  "Merriweather",
+  "Newsreader",
+  "Nunito Sans",
+  "Outfit",
+  "Playfair Display",
+  "Source Sans 3",
+  "Source Serif 4",
+];
