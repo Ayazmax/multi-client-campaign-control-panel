@@ -2,7 +2,7 @@
 // A change that spans several websites belongs in this file too.
 import { Router } from "express";
 import { prisma } from "../db.js";
-import { canAccessClient, canEditSite, canPublishSite } from "../access.js";
+import { canAccessClient, canEditSite, canOwnSite, canPublishSite } from "../access.js";
 import { requireUser } from "../loadUser.js";
 import { toStaffSiteSummary } from "../serialize.js";
 import { historyDate, joinNames, snapshotPayload } from "../snapshot.js";
@@ -338,6 +338,78 @@ export async function publishCampaign(tx, site, actor, languageCode) {
     include: siteDetailInclude,
   });
   return { site: publishedSite, sentence };
+}
+
+const GA_ID = /^G-[A-Z0-9]{4,24}$/;
+const GTM_ID = /^GTM-[A-Z0-9]{4,24}$/;
+
+export function readAnalyticsIds(body) {
+  const ga = typeof body?.gaMeasurementId === "string" ? body.gaMeasurementId.trim().toUpperCase() : "";
+  const gtm = typeof body?.gtmContainerId === "string" ? body.gtmContainerId.trim().toUpperCase() : "";
+  if (ga && !GA_ID.test(ga)) throw httpError(400, "A Google Analytics ID looks like G-NWMOBILE01.");
+  if (gtm && !GTM_ID.test(gtm)) throw httpError(400, "A Tag Manager ID looks like GTM-NWM001.");
+  return { gaMeasurementId: ga || null, gtmContainerId: gtm || null };
+}
+
+export async function saveAnalytics(tx, site, ids, actor) {
+  if (!ids.gaMeasurementId && !ids.gtmContainerId) {
+    if (site.analytics) await tx.analyticsSettings.delete({ where: { siteId: site.id } });
+  } else {
+    await tx.analyticsSettings.upsert({
+      where: { siteId: site.id },
+      create: { siteId: site.id, ...ids },
+      update: ids,
+    });
+  }
+  const saved = [ids.gaMeasurementId, ids.gtmContainerId].filter(Boolean);
+  const sentence = saved.length
+    ? `${actor.name} set ${saved.join(" and ")} on ${site.name} on ${historyDate(new Date())}.`
+    : `${actor.name} cleared the analytics IDs on ${site.name} on ${historyDate(new Date())}.`;
+  await tx.historyEvent.create({
+    data: {
+      workspaceId: site.client.workspaceId,
+      actorId: actor.id,
+      sentence,
+      siteIds: [site.id],
+    },
+  });
+  return { sentence, site: await tx.site.findUnique({ where: { id: site.id }, include: siteDetailInclude }) };
+}
+
+export async function failLaunch(tx, site, actor) {
+  const kept = Boolean(site.liveSnapshotId);
+  const nextStep = kept
+    ? "The public page is still the last successful publish. Fix the draft, then publish again."
+    : "Nothing is on the public page yet. Fix the draft, then publish when it is ready.";
+  const message = `${site.name} failed to launch. ${actor.name} simulated the failure on ${historyDate(new Date())}. The public page was left unchanged.`;
+  await tx.launchAttempt.create({
+    data: {
+      siteId: site.id,
+      outcome: "failed",
+      message,
+      nextStep,
+      snapshotId: site.liveSnapshotId,
+      createdById: actor.id,
+    },
+  });
+  await tx.site.update({
+    where: { id: site.id },
+    data: { status: "failed" },
+  });
+  const sentence = `${message} Next: ${nextStep}`;
+  await tx.historyEvent.create({
+    data: {
+      workspaceId: site.client.workspaceId,
+      actorId: actor.id,
+      sentence,
+      siteIds: [site.id],
+      snapshotId: site.liveSnapshotId,
+    },
+  });
+  return {
+    sentence,
+    site: await tx.site.findUnique({ where: { id: site.id }, include: siteDetailInclude }),
+  };
 }
 
 function readTheme(theme) {
@@ -786,6 +858,43 @@ campaignsRouter.post("/sites/:slug/publish", async (req, res, next) => {
       { timeout: 20000 },
     );
     res.json({ ...(await present(published.site)), sentence: published.sentence });
+  } catch (error) {
+    next(error);
+  }
+});
+
+campaignsRouter.patch("/sites/:slug/analytics", async (req, res, next) => {
+  try {
+    const site = await loadSite(req.params.slug);
+    if (!site || !canAccessClient(req.user, site.client)) {
+      res.status(404).json({ error: "Website not found." });
+      return;
+    }
+    if (!canOwnSite(req.user, site.client)) {
+      res.status(403).json({ error: "An owner saves analytics IDs." });
+      return;
+    }
+    const ids = readAnalyticsIds(req.body);
+    const saved = await prisma.$transaction((tx) => saveAnalytics(tx, site, ids, req.user));
+    res.json({ ...(await present(saved.site)), sentence: saved.sentence });
+  } catch (error) {
+    next(error);
+  }
+});
+
+campaignsRouter.post("/sites/:slug/fail-launch", async (req, res, next) => {
+  try {
+    const site = await loadSite(req.params.slug);
+    if (!site || !canAccessClient(req.user, site.client)) {
+      res.status(404).json({ error: "Website not found." });
+      return;
+    }
+    if (!canPublishSite(req.user, site.client)) {
+      res.status(403).json({ error: "An owner or reviewer records a launch." });
+      return;
+    }
+    const failed = await prisma.$transaction((tx) => failLaunch(tx, site, req.user));
+    res.json({ ...(await present(failed.site)), sentence: failed.sentence });
   } catch (error) {
     next(error);
   }

@@ -63,7 +63,15 @@ export function toPublicSite(site) {
       .map((page) => ({ key: page.key, path: page.path })),
     fields,
     offers,
+    analytics: publicAnalytics(site),
   };
+}
+
+function publicAnalytics(site) {
+  const ga = site.analytics?.gaMeasurementId || "";
+  const gtm = site.analytics?.gtmContainerId || "";
+  if (!ga && !gtm) return null;
+  return { gaMeasurementId: ga || null, gtmContainerId: gtm || null };
 }
 
 export function toStaffSite(site) {

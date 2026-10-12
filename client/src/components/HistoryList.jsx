@@ -30,7 +30,7 @@ export function HistoryList() {
   }, [site]);
 
   return (
-    <PanelFrame section="history" title="History" lede="What changed, where, who, and when.">
+    <PanelFrame section="history" help="restore" title="History" lede="What changed, where, who, and when.">
       <label className="history-filter">
         Website
         <select

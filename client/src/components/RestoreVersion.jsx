@@ -35,7 +35,7 @@ export function RestoreVersion() {
   }
 
   return (
-    <PanelFrame back title="Restore a version" lede={preview ? preview.warning : "Loading this version."}>
+    <PanelFrame back help="restore" title="Restore a version" lede={preview ? preview.warning : "Loading this version."}>
       {error ? <p className="form-error">{error}</p> : null}
       {!preview && !error ? <p className="page-loading">Loading this version…</p> : null}
       {preview ? (

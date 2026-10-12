@@ -43,6 +43,7 @@ export function CloneCampaign() {
   return (
     <PanelFrame
       back
+      help="clone"
       title="Create campaign"
       lede={source ? `From ${source.name}` : "Copy a website into a new draft."}
     >

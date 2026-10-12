@@ -1,6 +1,6 @@
 # Website Operations — Phase Plan
 
-Status: Phase 8 is in place. Staff can read history, restore an earlier published version, restore a backup after a warning, and move a site into Archive without private notes or analytics IDs. Phases 9–10 are waiting for approval.
+Status: Phase 9 is in place. Analytics IDs can be saved and shown on the public page, a simulated failed launch leaves the last good publish live, and each main screen has help for that task. Phase 10 is waiting for approval.
 
 This plan turns the Round 2 assessment into a build sequence. The product is a control panel for non-technical marketing and operations staff, plus example campaign websites rendered from a master template. Website content lives in PostgreSQL. The public site reads only published content.
 
@@ -269,7 +269,7 @@ Done when: publishing the wrong offer price can be recognised and restored by Me
 
 ### Phase 9 — Everyday operations and a failed launch
 
-The remaining operational tasks from the brief.
+The remaining operational tasks
 
 Deliver:
 

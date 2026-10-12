@@ -34,7 +34,7 @@ export function MoveSite() {
   }
 
   return (
-    <PanelFrame back title="Move website" lede={preview ? preview.warning : "Loading the move."}>
+    <PanelFrame back help="move" title="Move website" lede={preview ? preview.warning : "Loading the move."}>
       {error ? <p className="form-error">{error}</p> : null}
       {!preview && !error ? <p className="page-loading">Loading the move…</p> : null}
       {preview ? (

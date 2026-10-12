@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth.jsx";
+import { HelpButton } from "./HelpDrawer.jsx";
 import { PanelNav } from "./PanelFrame.jsx";
 import { fetchHealth, fetchPanelSites } from "../lib/api.js";
 import { notePanelVisit } from "../lib/panelTrail.js";
@@ -55,6 +56,7 @@ export function PanelHome() {
           </div>
           <div className="header-actions">
             <HealthBadge health={health} />
+            <HelpButton topic="websites" />
             <button type="button" className="quiet-button" onClick={() => logout()}>
               Sign out
             </button>

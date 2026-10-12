@@ -82,6 +82,17 @@ export function saveSite(slug, body) {
   });
 }
 
+export function saveAnalytics(slug, body) {
+  return request(`/api/panel/sites/${slug}/analytics`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export function failLaunch(slug) {
+  return request(`/api/panel/sites/${slug}/fail-launch`, { method: "POST" });
+}
+
 export function publishSite(slug, language) {
   return request(`/api/panel/sites/${slug}/publish`, {
     method: "POST",

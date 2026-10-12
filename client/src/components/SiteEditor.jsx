@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../auth.jsx";
-import { addSiteLanguage, createBackup, fetchPanelSite, importTranslation, publishSite, saveSite } from "../lib/api.js";
+import { addSiteLanguage, createBackup, failLaunch, fetchPanelSite, importTranslation, publishSite, saveAnalytics, saveSite } from "../lib/api.js";
 import { PanelFrame } from "./PanelFrame.jsx";
 
 const SECTIONS = [
@@ -25,6 +25,12 @@ export function SiteEditor() {
   const [publishing, setPublishing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [confirmingFail, setConfirmingFail] = useState(false);
+  const [failing, setFailing] = useState(false);
+  const [savingAnalytics, setSavingAnalytics] = useState(false);
+  const [launch, setLaunch] = useState(null);
+  const [gaId, setGaId] = useState("");
+  const [gtmId, setGtmId] = useState("");
   const [conflict, setConflict] = useState(null);
 
   useEffect(() => {
@@ -48,6 +54,9 @@ export function SiteEditor() {
   function remember(body) {
     setSite(body.site);
     setMissing(body.missing || []);
+    setLaunch(body.launch || null);
+    setGaId(body.site.analytics?.gaMeasurementId || "");
+    setGtmId(body.site.analytics?.gtmContainerId || "");
     if (body.catalog) setCatalog(body.catalog);
     return body;
   }
@@ -60,6 +69,38 @@ export function SiteEditor() {
   const destination = site
     ? user.memberships.find((item) => item.role === "owner" && item.workspace.id !== site.workspace.id)
     : null;
+
+  async function onAnalytics(event) {
+    event.preventDefault();
+    setError("");
+    setNotice("");
+    setSavingAnalytics(true);
+    try {
+      const body = await saveAnalytics(slug, { gaMeasurementId: gaId, gtmContainerId: gtmId });
+      remember(body);
+      setNotice(body.sentence);
+    } catch (caught) {
+      setError(caught.message);
+    } finally {
+      setSavingAnalytics(false);
+    }
+  }
+
+  async function onFail() {
+    setError("");
+    setNotice("");
+    setFailing(true);
+    try {
+      const body = await failLaunch(slug);
+      remember(body);
+      setConfirmingFail(false);
+      setNotice(body.launch?.nextStep || body.sentence);
+    } catch (caught) {
+      setError(caught.message);
+    } finally {
+      setFailing(false);
+    }
+  }
 
   async function onBackup() {
     setError("");
@@ -205,6 +246,7 @@ export function SiteEditor() {
   return (
     <PanelFrame
       back
+      help="editor"
       title={site?.name || "Website"}
       lede={site ? `${site.client.name} · ${site.status}` : "Loading the draft."}
       actions={site ? <Link to={previewHref}>Preview</Link> : null}
@@ -228,6 +270,56 @@ export function SiteEditor() {
             ) : null}
           </div>
         </section>
+        {canPublish || launch?.outcome === "failed" ? (
+          <section className={`editor-card site-safeguards${launch?.outcome === "failed" ? " launch-failed" : ""}`}>
+            <h2>Launch</h2>
+            {launch?.outcome === "failed" ? (
+              <>
+                <p>{launch.message}</p>
+                <p>{launch.nextStep}</p>
+              </>
+            ) : (
+              <p>A failed launch leaves the public page on the last successful publish.</p>
+            )}
+            {canPublish ? (
+              confirmingFail ? (
+                <div className="editor-actions">
+                  <button type="button" className="solid-button" disabled={failing} onClick={onFail}>
+                    {failing ? "Recording…" : "Record the failure"}
+                  </button>
+                  <button type="button" className="quiet-button" onClick={() => setConfirmingFail(false)}>
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button type="button" className="quiet-button" onClick={() => setConfirmingFail(true)}>
+                  Simulate failed launch
+                </button>
+              )
+            ) : null}
+          </section>
+        ) : null}
+        {role === "owner" ? (
+          <form className="editor-card site-safeguards" onSubmit={onAnalytics}>
+            <h2>Analytics</h2>
+            <p>These IDs are printed on the public page for the demo. They are not sent to Google.</p>
+            <div className="field-grid">
+              <label>
+                Google Analytics ID
+                <input value={gaId} onChange={(event) => setGaId(event.target.value)} placeholder="G-XXXXXXXX" />
+              </label>
+              <label>
+                Tag Manager ID
+                <input value={gtmId} onChange={(event) => setGtmId(event.target.value)} placeholder="GTM-XXXXXXX" />
+              </label>
+            </div>
+            <div className="editor-actions">
+              <button type="submit" className="solid-button" disabled={savingAnalytics}>
+                {savingAnalytics ? "Saving…" : "Save analytics"}
+              </button>
+            </div>
+          </form>
+        ) : null}
         <form className="editor-form site-review" onSubmit={onSave}>
           <section className="editor-card">
             <h2>Branding</h2>

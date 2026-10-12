@@ -24,7 +24,7 @@ export function SiteBackups() {
   }, [slug]);
 
   return (
-    <PanelFrame back title="Backups" lede={body ? body.site.name : "Loading backups."}>
+    <PanelFrame back help="backup" title="Backups" lede={body ? body.site.name : "Loading backups."}>
       {error ? <p className="form-error">{error}</p> : null}
       {!body && !error ? <p className="page-loading">Loading backups…</p> : null}
       {body?.backups.length === 0 ? <p className="empty-line">This website has no backup yet.</p> : null}
@@ -72,7 +72,7 @@ export function BackupReview() {
   }
 
   return (
-    <PanelFrame back title="Restore a backup" lede={preview ? preview.warning : "Loading this backup."}>
+    <PanelFrame back help="backup" title="Restore a backup" lede={preview ? preview.warning : "Loading this backup."}>
       {error ? <p className="form-error">{error}</p> : null}
       {!preview && !error ? <p className="page-loading">Loading this backup…</p> : null}
       {preview ? (

@@ -70,6 +70,13 @@ export function CampaignSite({
         "--brand-font": `"${theme.fontFamily || "Source Serif 4"}"`,
       }}
     >
+      {site.analytics?.gaMeasurementId || site.analytics?.gtmContainerId ? (
+        <p className="analytics-head">
+          <span>Demo only. These IDs are not sent to Google.</span>
+          {site.analytics.gaMeasurementId ? <span>Analytics {site.analytics.gaMeasurementId}</span> : null}
+          {site.analytics.gtmContainerId ? <span>Tag Manager {site.analytics.gtmContainerId}</span> : null}
+        </p>
+      ) : null}
       {preview ? (
         <p className="preview-banner">
           <button

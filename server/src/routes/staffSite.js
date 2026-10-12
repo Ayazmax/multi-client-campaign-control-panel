@@ -49,12 +49,24 @@ export function missingTranslations(site, catalogFields) {
 }
 
 export async function present(site) {
-  const [fields, catalog] = await Promise.all([
+  const [fields, catalog, launch] = await Promise.all([
     prisma.contentField.findMany(),
     prisma.language.findMany(),
+    prisma.launchAttempt.findFirst({
+      where: { siteId: site.id },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
   return {
     site: toStaffSite(site),
+    launch: launch
+      ? {
+          outcome: launch.outcome,
+          message: launch.message,
+          nextStep: launch.nextStep,
+          createdAt: launch.createdAt,
+        }
+      : null,
     missing: missingTranslations(site, fields),
     catalog: catalog
       .slice()

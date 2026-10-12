@@ -95,6 +95,7 @@ export function BulkUpdate() {
   return (
     <PanelFrame
       section="bulk"
+      help="bulk"
       title="Update several websites"
       lede="Choose one shared detail, then choose the websites and languages. Everything else stays as it is."
     >

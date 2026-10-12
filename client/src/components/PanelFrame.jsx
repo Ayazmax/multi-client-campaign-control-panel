@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth.jsx";
 import { notePanelVisit, panelBackTarget, stepBack } from "../lib/panelTrail.js";
+import { HelpButton } from "./HelpDrawer.jsx";
 
 export function PanelNav({ section }) {
   return (
@@ -25,7 +26,7 @@ export function PanelNav({ section }) {
   );
 }
 
-export function PanelFrame({ title, lede, actions, section = "websites", back = false, children }) {
+export function PanelFrame({ title, lede, actions, section = "websites", back = false, help, children }) {
   const { logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -65,6 +66,7 @@ export function PanelFrame({ title, lede, actions, section = "websites", back = 
           </div>
           <div className="header-actions">
             {actions}
+            {help ? <HelpButton topic={help} /> : null}
             <button type="button" className="quiet-button" onClick={() => logout()}>
               Sign out
             </button>

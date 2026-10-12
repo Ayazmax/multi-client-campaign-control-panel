@@ -34,6 +34,7 @@ export const publicRouter = Router();
 const publicInclude = {
   theme: true,
   pages: true,
+  analytics: true,
   siteLanguages: { include: { language: true } },
   contentValues: { include: { field: true, language: true } },
   siteOffers: { include: { offer: true, language: true } },
