@@ -83,11 +83,15 @@ export function CampaignSite({
         <p className="preview-banner">
           <button
             type="button"
+            className="quiet-button back-link"
             onClick={() => {
               const target = stepBack(location.pathname);
               if (target) navigate(target);
             }}
           >
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M12.5 5.5 7.5 10l5 4.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
             Back
           </button>
           <span>

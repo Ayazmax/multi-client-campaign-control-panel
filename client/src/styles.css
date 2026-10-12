@@ -335,15 +335,15 @@ button[type="submit"],
 }
 
 .back-link {
-  display: inline-block;
-  margin: 0 0 0.35rem;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: #0f6e56;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.7rem;
+}
+
+.back-link svg {
+  width: 1rem;
+  height: 1rem;
 }
 
 .review-note {
@@ -1078,15 +1078,9 @@ button.texty {
   font-weight: 700;
 }
 
-.preview-banner button {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: #6d4e12;
-  font: inherit;
-  font-weight: 700;
-  text-decoration: underline;
-  cursor: pointer;
+.preview-banner .back-link {
+  margin: 0;
+  flex: none;
 }
 
 .campaign-header {

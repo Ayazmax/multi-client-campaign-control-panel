@@ -56,7 +56,10 @@ export function PanelFrame({ title, lede, actions, section = "websites", back = 
         <header className="panel-header">
           <div>
             {destination ? (
-              <button type="button" className="back-link" onClick={onBack}>
+              <button type="button" className="quiet-button back-link" onClick={onBack}>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M12.5 5.5 7.5 10l5 4.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
                 Back
               </button>
             ) : null}
