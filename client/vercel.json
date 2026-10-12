@@ -1,0 +1,9 @@
+{
+    "rewrites": [
+      { "source": "/api/:path*", "destination": "https://website-operations-api.onrender.com/api/:path*" },
+      { "source": "/health", "destination": "https://website-operations-api.onrender.com/health" },
+      { "source": "/sitemap.xml", "destination": "https://website-operations-api.onrender.com/api/public/sitemap.xml" },
+      { "source": "/robots.txt", "destination": "https://website-operations-api.onrender.com/api/public/robots.txt" },
+      { "source": "/(.*)", "destination": "/index.html" }
+    ]
+  }
